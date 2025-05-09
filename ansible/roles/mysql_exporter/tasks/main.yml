@@ -1,0 +1,45 @@
+- name: Download MySQL Exporter
+  ansible.builtin.get_url:
+    url: https://github.com/prometheus/mysqld_exporter/releases/download/v0.15.1/mysqld_exporter-0.15.1.linux-amd64.tar.gz
+    dest: /tmp/mysql_exporter.tar.gz
+
+- name: Extract MySQL Exporter
+  ansible.builtin.unarchive:
+    src: /tmp/mysql_exporter.tar.gz
+    dest: /usr/local/bin/
+    remote_src: yes
+
+- name: Ensure mysql_exporter config directory exists
+  ansible.builtin.file:
+    path: /etc/mysql_exporter
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy mysql_exporter env file
+  ansible.builtin.copy:
+    dest: /etc/mysql_exporter/env
+    content: |
+      DATA_SOURCE_NAME={{ mysql.exporter_user }}:{{ mysql.exporter_password }}@(localhost:3306)/
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload systemd
+    - restart mysql exporter
+
+- name: Deploy mysql_exporter systemd service
+  ansible.builtin.template:
+    src: mysql_exporter.service.j2
+    dest: /etc/systemd/system/mysql_exporter.service
+  notify:
+    - reload systemd
+    - stop mysql exporter
+    - start mysql exporter
+
+- name: Ensure MySQL Exporter is running and enabled
+  ansible.builtin.systemd:
+    name: mysql_exporter
+    enabled: true
+    state: started

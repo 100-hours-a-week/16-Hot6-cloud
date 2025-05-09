@@ -1,0 +1,10 @@
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/node_exporter-1.7.0.linux-amd64/node_exporter
+Restart=always
+
+[Install]
+WantedBy=default.target

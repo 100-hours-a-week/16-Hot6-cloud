@@ -1,0 +1,10 @@
+[Unit]
+Description=MySQL Exporter
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/mysqld_exporter-0.15.1.linux-amd64/mysqld_exporter --config.my-cnf=/etc/mysql/my.cnf
+Restart=always
+
+[Install]
+WantedBy=default.target

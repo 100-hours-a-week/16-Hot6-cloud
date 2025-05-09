@@ -39,9 +39,10 @@ ansible/ansible.cfg
 ansible/inventory.ini
 
 # 시크릿 넣을거임
-prometheus.yml
+prometheus.yml*
 alertmanager.yml
 nginx.conf
 all.yml
 
 .DS_Store
+.vscode

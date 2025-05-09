@@ -1,0 +1,14 @@
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: stop blackbox exporter
+  ansible.builtin.systemd:
+    name: blackbox_exporter
+    state: stopped
+
+- name: start blackbox exporter
+  ansible.builtin.systemd:
+    name: blackbox_exporter
+    state: started
+    enabled: yes

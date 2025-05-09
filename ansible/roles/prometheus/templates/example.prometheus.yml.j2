@@ -1,0 +1,74 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - "localhost:9093"
+
+scrape_configs:
+
+{% set roles = [] %}
+{% for host in groups['exporters'] %}
+{% set _ = roles.append(hostvars[host]['role']) %}
+{% endfor %}
+
+{% for role in roles | unique %}
+  - job_name: '{{ role }}_exporter'
+    static_configs:
+{% for host in groups['exporters'] if hostvars[host]['role'] == role %}
+      - targets: ['{{ hostvars[host]['ansible_host'] }}:{{ hostvars[host]['port'] }}']
+        labels:
+          environment: '{{ hostvars[host]["environment"] }}'
+          role: '{{ hostvars[host]["role"] }}'
+          instance: '{{ hostvars[host]["ansible_host"] }}'
+{% endfor %}
+{% endfor %}
+
+  - job_name: 'blackbox_http'
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - https://dev-frontend.example.com
+        labels:
+          environment: dev
+          role: frontend
+          name: dev-frontend
+
+      - targets:
+          - https://dev-backend.example.com/health
+        labels:
+          environment: dev
+          role: backend
+          name: dev-backend
+
+      - targets:
+          - https://prod-frontend.example.com
+        labels:
+          environment: prod
+          role: frontend
+          name: prod-frontend
+
+      - targets:
+          - https://prod-backend.example.com/health
+        labels:
+          environment: prod
+          role: backend
+          name: prod-backend
+
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: __tmp_url
+      - source_labels: [name]
+        target_label: instance
+      - target_label: __address__
+        replacement: BLACKBOX_EXPORTER_IP:9115

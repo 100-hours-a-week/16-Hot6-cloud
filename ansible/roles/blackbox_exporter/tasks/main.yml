@@ -1,0 +1,39 @@
+- name: Install Blackbox Exporter
+  ansible.builtin.get_url:
+    url: https://github.com/prometheus/blackbox_exporter/releases/download/v0.25.0/blackbox_exporter-0.25.0.linux-amd64.tar.gz
+    dest: /tmp/blackbox_exporter.tar.gz
+
+- name: Extract Blackbox Exporter
+  ansible.builtin.unarchive:
+    src: /tmp/blackbox_exporter.tar.gz
+    dest: /usr/local/bin/
+    remote_src: yes
+
+- name: Create config directory
+  ansible.builtin.file:
+    path: /etc/blackbox_exporter
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Deploy config.yml
+  ansible.builtin.copy:
+    src: config.yml
+    dest: /etc/blackbox_exporter/config.yml
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - reload systemd
+    - stop blackbox exporter
+    - start blackbox exporter
+
+- name: Setup Blackbox Exporter systemd service
+  ansible.builtin.template:
+    src: blackbox_exporter.service.j2
+    dest: /etc/systemd/system/blackbox_exporter.service
+  notify:
+    - reload systemd
+    - stop blackbox exporter
+    - start blackbox exporter

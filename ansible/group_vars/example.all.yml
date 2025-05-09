@@ -51,3 +51,8 @@ nginx:
 
 # Certbot (인증서 발급용 이메일 주소)
 certbot_email: admin@example.com
+
+# MySQL (MySQL Exporter 용 설정)
+mysql:
+  exporter_user: exporter
+  exporter_password: your_password

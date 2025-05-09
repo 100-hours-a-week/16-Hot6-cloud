@@ -69,28 +69,19 @@ groups:
     interval: 30s
     rules:
       - alert: FrontendDown
-        expr: probe_http_status_code{instance=~".*:3000"} != 200
+        expr: probe_success{instance="dev-frontend", job="blackbox_http"} == 0
         for: 10m
         labels:
           severity: critical
         annotations:
-          summary: "Frontend 서비스 장애"
-          description: "Instance {{ $labels.instance }}의 Frontend(3000) 서비스가 10분 동안 응답하지 않음."
+          summary: "Dev Frontend 서비스 장애"
+          description: "Dev Frontend (dev-onthe-top.com)이 10분 동안 응답하지 않음."
 
       - alert: BackendDown
-        expr: probe_http_status_code{instance=~".*:8080"} != 200
+        expr: probe_success{instance="dev-backend", job="blackbox_http"} == 0
         for: 10m
         labels:
           severity: critical
         annotations:
-          summary: "Backend 서비스 장애"
-          description: "Instance {{ $labels.instance }}의 Backend(8080) 서비스가 10분 동안 응답하지 않음."
-
-      - alert: AIDown
-        expr: probe_http_status_code{instance=~".*:8000"} != 200
-        for: 10m
-        labels:
-          severity: critical
-        annotations:
-          summary: "AI 서비스 장애"
-          description: "Instance {{ $labels.instance }}의 AI(8000) 서비스가 10분 동안 응답하지 않음."
+          summary: "Dev Backend 서비스 장애"
+          description: "Dev Backend (dev-backend.onthe-top.com/api/v1/health)가 10분 동안 응답하지 않음."

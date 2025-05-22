@@ -94,7 +94,7 @@ groups:
       #     severity: critical
       #   annotations:
       #     summary: "Dev AI 서비스 장애"
-      #     description: "Dev AI (https://dev-ai.onthe-top.com/health)가 10분 동안 응답하지 않음."
+      #     description: "Dev AI: https://dev-ai.onthe-top.com/info 가 10분 동안 응답하지 않음."
 
       # PROD
       - alert: ProdFrontendHttpsDown
@@ -122,5 +122,5 @@ groups:
           severity: critical
         annotations:
           summary: "Prod AI 서비스 장애"
-          description: "Prod AI: https://ai.onthe-top.com/health 가 10분 동안 응답하지 않음."
+          description: "Prod AI: https://ai.onthe-top.com/info 가 10분 동안 응답하지 않음."
       

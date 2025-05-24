@@ -43,3 +43,8 @@
   roles:
     - node_exporter
     - { role: promtail, when: "'promtail_targets' in group_names" }
+
+- hosts: monitoring_targets_gpu
+  become: true
+  roles:
+    - dcgm_exporter

@@ -106,7 +106,9 @@ jobs:
           REGION=${{ steps.vars.outputs.region }}
           ZONE=${{ steps.vars.outputs.zone }}
           INSTANCE_URL=$(gcloud compute instance-groups managed list-instances $MIG --region=$REGION --format="value(instance)")
+          echo "INSTANCE_URL=$INSTANCE_URL"
           INSTANCE_NAME=$(basename $INSTANCE_URL)
+          echo "INSTANCE_NAME=$INSTANCE_NAME"
           IP=$(gcloud compute instances describe $INSTANCE_NAME --zone $ZONE --format="get(networkInterfaces[0].networkIP)")
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT

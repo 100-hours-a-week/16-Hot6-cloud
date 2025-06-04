@@ -71,7 +71,7 @@ jobs:
       
           TEMPLATE_NAME="onthetop-backend-${BE_SLOT}-v${BE_VERSION//./-}"
           # MIG_NAME="onthetop-backend-${BE_SLOT}"
-          MIG_NAME="MIG=onthetop-mig-prod"
+          MIG_NAME="onthetop-mig-prod"
       
           echo "be_version=$BE_VERSION" >> $GITHUB_OUTPUT
           echo "be_slot=$BE_SLOT" >> $GITHUB_OUTPUT

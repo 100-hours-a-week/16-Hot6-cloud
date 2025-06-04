@@ -1,15 +1,15 @@
-name: Deploy Docker Prod
+# name: Deploy Docker Prod
 
-on:
-  workflow_dispatch:
-    inputs:
-      be_version:
-        description: '배포할 BE 버전 (예: 1.2.3)'
-        required: true
-      be_slot:
-        description: 'BE 슬롯 선택 (예: blue, green)'
-        required: true
-        default: 'green'
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       be_version:
+#         description: '배포할 BE 버전 (예: 1.2.3)'
+#         required: true
+#       be_slot:
+#         description: 'BE 슬롯 선택 (예: blue, green)'
+#         required: true
+#         default: 'green'
       # fe_version:
       #   description: '배포할 FE 버전 (예: 1.2.3)'
       #   required: true
@@ -17,6 +17,13 @@ on:
       #   description: 'FE 슬롯 선택 (예: blue, green)'
       #   required: true
       #   default: 'green'
+name: Deploy Docker Prod (Temporary Hardcoded)
+
+on:
+  push:
+    branches:
+      - feat/docker
+
 
 jobs:
   deploy:
@@ -29,6 +36,9 @@ jobs:
       REGION: asia-northeast3
       ZONE: asia-northeast3-a
       GH_FE_REPO: 100-hours-a-week/16-Hot6-fe
+      BE_VERSION: "1.0.1"
+      BE_SLOT: "green"
+      BE_PORT: "8081"
 
     steps:
       - name: Checkout Infra Repo
@@ -45,10 +55,10 @@ jobs:
       - name: Set variables
         id: vars
         run: |
-          BE_VERSION="${{ github.event.inputs.be_version }}"
-          BE_SLOT="${{ github.event.inputs.be_slot }}"
-          FE_VERSION="${{ github.event.inputs.fe_version }}"
-          FE_SLOT="${{ github.event.inputs.fe_slot }}"
+          # BE_VERSION="${{ github.event.inputs.be_version }}"
+          # BE_SLOT="${{ github.event.inputs.be_slot }}"
+          # FE_VERSION="${{ github.event.inputs.fe_version }}"
+          # FE_SLOT="${{ github.event.inputs.fe_slot }}"
           REGION="${{ env.REGION }}"
           ZONE="${{ env.ZONE }}"
 

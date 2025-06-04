@@ -10,9 +10,13 @@ apt update && apt install -y docker.io jq
 # 1. 메타데이터에서 버전 정보 가져오기
 METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 VERSION=$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/startup-version")
+PORT=$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/be-port")
+SLOT=$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/be-slot")
 ENV="prod"
+CONTAINER_NAME="backend-$SLOT"
 
 echo "✅ Version: $VERSION"
+echo "✅ Port: $PORT"
 echo "✅ Environment: $ENV"
 
 # 2. Secret Manager에서 secrets.properties 생성 (확장형)
@@ -42,8 +46,11 @@ mkdir -p "$LOG_DIR"
 chown -R ubuntu:ubuntu "$LOG_DIR"
 
 # 4. 이전 컨테이너 제거
-echo "🧹 Cleaning up existing Docker container..."
-docker rm -f backend || true
+echo "🧹 Cleaning up old container named $CONTAINER_NAME..."
+EXISTING_CONTAINER=$(docker ps -aq --filter "name=^/$CONTAINER_NAME\$" || true)
+if [ -n "$EXISTING_CONTAINER" ]; then
+  docker rm -f "$EXISTING_CONTAINER"
+fi
 
 
 # 5. Docker 이미지 pull
@@ -52,15 +59,39 @@ docker pull luckyprice1103/onthetop-backend:$VERSION
 
 #6. Docker 이미지 실행
 
-echo "🚀 Running backend Docker container..."
+echo "🚀 Running backend Docker container on port $PORT..."
 docker run -d \
-  --name backend \
-  -p 8080:8080 \
-  -e SPRING_PROFILES_ACTIVE=prod \
+  --name "$CONTAINER_NAME" \
+  -p "$PORT":8080 \
+  -e SPRING_PROFILES_ACTIVE=$ENV \
   -v "$SECRETS_FILE":/app/secrets.properties \
   -v "$LOG_DIR":/logs \
   luckyprice1103/onthetop-backend:$VERSION \
   --spring.config.additional-location=file:/app/secrets.properties \
   --logging.file.path=/logs/backend.log
 
-echo "✅ Backend Docker container is up and running."
+echo "✅ Backend container is running on port $PORT"
+
+# 7. Nginx 설정 템플릿 직접 생성
+echo "🛠 Generating Nginx template..."
+cat <<EOF > "$NGINX_TEMPLATE"
+server {
+  listen 80;
+  server_name localhost;
+
+  location / {
+    proxy_pass http://localhost:\$PORT;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+  }
+}
+EOF
+
+chown ubuntu:ubuntu "$NGINX_TEMPLATE"
+chmod 644 "$NGINX_TEMPLATE"
+
+# 8. Nginx 설정 파일 동적 생성 및 reload
+echo "⚙️ Updating nginx config for slot $SLOT..."
+envsubst '\$PORT \$SLOT' < "$NGINX_TEMPLATE" > "$NGINX_CONF"
+nginx -s reload || systemctl reload nginx
+echo "✅ Nginx reloaded with new config."

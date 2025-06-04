@@ -10,13 +10,13 @@ on:
         description: 'BE 슬롯 선택 (예: blue, green)'
         required: true
         default: 'green'
-      fe_version:
-        description: '배포할 FE 버전 (예: 1.2.3)'
-        required: true
-      fe_slot:
-        description: 'FE 슬롯 선택 (예: blue, green)'
-        required: true
-        default: 'green'
+      # fe_version:
+      #   description: '배포할 FE 버전 (예: 1.2.3)'
+      #   required: true
+      # fe_slot:
+      #   description: 'FE 슬롯 선택 (예: blue, green)'
+      #   required: true
+      #   default: 'green'
 
 jobs:
   deploy:
@@ -51,12 +51,20 @@ jobs:
           FE_SLOT="${{ github.event.inputs.fe_slot }}"
           REGION="${{ env.REGION }}"
           ZONE="${{ env.ZONE }}"
+
+          # 포트 매핑: blue → 8080, green → 8081
+          if [ "$BE_SLOT" = "blue" ]; then
+            BE_PORT=8080
+          else
+            BE_PORT=8081
+          fi
       
           TEMPLATE_NAME="onthetop-backend-${BE_SLOT}-v${BE_VERSION//./-}"
           MIG_NAME="onthetop-backend-${BE_SLOT}"
       
           echo "be_version=$BE_VERSION" >> $GITHUB_OUTPUT
           echo "be_slot=$BE_SLOT" >> $GITHUB_OUTPUT
+          echo "be_port=$BE_PORT" >> $GITHUB_OUTPUT
           echo "fe_version=$FE_VERSION" >> $GITHUB_OUTPUT
           echo "fe_slot=$FE_SLOT" >> $GITHUB_OUTPUT
           echo "region=$REGION" >> $GITHUB_OUTPUT
@@ -66,209 +74,124 @@ jobs:
 
       # ------------------ FE 업로드 ------------------
 
-      - name: Download FE artifact from GitHub Release
-        run: |
-          curl -L -o fe.zip https://github.com/$GH_FE_REPO/releases/download/v${{ steps.vars.outputs.fe_version }}/frontend-prod-build.zip
-          unzip -o fe.zip -d fe-dist
+      # - name: Download FE artifact from GitHub Release
+      #   run: |
+      #     curl -L -o fe.zip https://github.com/$GH_FE_REPO/releases/download/v${{ steps.vars.outputs.fe_version }}/frontend-prod-build.zip
+      #     unzip -o fe.zip -d fe-dist
 
-      - name: Upload FE to S3
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
-          AWS_DEFAULT_REGION: ap-northeast-2
-        run: |
-          aws s3 sync fe-dist/ s3://onthe-top/frontend/prod/${{ steps.vars.outputs.fe_slot }} --delete
+      # - name: Upload FE to S3
+      #   env:
+      #     AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+      #     AWS_DEFAULT_REGION: ap-northeast-2
+      #   run: |
+      #     aws s3 sync fe-dist/ s3://onthe-top/frontend/prod/${{ steps.vars.outputs.fe_slot }} --delete
 
       # ------------------ BE 배포 ------------------
-
-      - name: Clean up existing template/MIG if exists
+      - name: Get MIG Instance IP
+        id: get_ip
         run: |
-          TEMPLATE=${{ steps.vars.outputs.template_name }}
           MIG=${{ steps.vars.outputs.mig_name }}
           ZONE=${{ steps.vars.outputs.zone }}
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances $MIG --zone $ZONE --format="value(instance)")
+          INSTANCE_NAME=$(basename $INSTANCE_URL)
+          IP=$(gcloud compute instances describe $INSTANCE_NAME --zone $ZONE --format="get(networkInterfaces[0].networkIP)")
 
-          echo "🔍 Checking if MIG exists..."
-          gcloud compute instance-groups managed describe $MIG --zone=$ZONE >/dev/null 2>&1 && \
-            gcloud compute instance-groups managed delete $MIG --zone=$ZONE --quiet || echo "✅ MIG not found. Skipping delete."
+          echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
+          echo "instance_ip=$IP" >> $GITHUB_OUTPUT
 
-          echo "🔍 Checking if instance template exists..."
-          gcloud compute instance-templates describe $TEMPLATE >/dev/null 2>&1 && \
-            gcloud compute instance-templates delete $TEMPLATE --quiet || echo "✅ Template not found. Skipping delete."
-
-      - name: (Optional) Ensure Health Check Exists
-        run: |
-          gcloud compute health-checks describe http-health-check >/dev/null 2>&1 || \
-          gcloud compute health-checks create http http-health-check \
-            --port 8080 \
-            --request-path=/api/v1/health \
-            --check-interval=30s \
-            --timeout=10s \
-            --unhealthy-threshold=3 \
-            --healthy-threshold=2
-
-      - name: Create Instance Template
-        run: |
-          TEMPLATE=${{ steps.vars.outputs.template_name }}
       
-          echo "🔍 Checking if instance template $TEMPLATE exists..."
-          if gcloud compute instance-templates describe "$TEMPLATE" >/dev/null 2>&1; then
-            echo "✅ Instance template $TEMPLATE already exists. Skipping creation."
-          else
-            echo "🚀 Creating instance template $TEMPLATE..."
-            gcloud compute instance-templates create "$TEMPLATE" \
-              --machine-type=e2-small \
-              --region=${{ steps.vars.outputs.region }} \
-              --network-interface=subnet=onthetop-subnet-prod-private-server-a,no-address \
-              --image=projects/ubuntu-os-cloud/global/images/ubuntu-minimal-2404-noble-amd64-v20250514 \
-              --boot-disk-size=20GB \
-              --service-account=213622576886-compute@developer.gserviceaccount.com \
-              --scopes=https://www.googleapis.com/auth/cloud-platform \
-              --tags=http-server,https-server,onthetop-monitoring-target,onthetop-server \
-              --metadata=startup-version=${{ steps.vars.outputs.be_version }} \
-              --metadata-from-file=startup-script=scripts/cicd/startup-docker-script.sh
-          fi
-          
-
-      - name: Create Managed Instance Group (MIG)
+      - name: Set up SSH config for Jump & Target
         run: |
-          gcloud compute instance-groups managed create ${{ steps.vars.outputs.mig_name }} \
-            --base-instance-name=${{ steps.vars.outputs.mig_name }} \
-            --size=1 \
-            --template=${{ steps.vars.outputs.template_name }} \
-            --zone=${{ steps.vars.outputs.zone }} \
-            --health-check=http-health-check \
-            --initial-delay=180
+          mkdir -p ~/.ssh
 
-      - name: Set Named Port for MIG
+          echo "${{ secrets.JUMP_SSH_KEY }}" > ~/.ssh/jump_key
+          chmod 600 ~/.ssh/jump_key
+
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/dev_key
+          chmod 600 ~/.ssh/dev_key
+
+          cat <<EOF > ~/.ssh/config
+          Host backend-server
+              HostName ${{ steps.get_ip.outputs.instance_ip }}
+              User ubuntu
+              IdentityFile ~/.ssh/dev_key
+              ProxyJump jump-server
+              StrictHostKeyChecking no
+              UserKnownHostsFile /dev/null
+
+          Host jump-server
+              HostName ${{ secrets.JUMP_SSH_HOST }}
+              User ubuntu
+              IdentityFile ~/.ssh/jump_key
+              StrictHostKeyChecking no
+              UserKnownHostsFile /dev/null
+          EOF
+
+      - name: Deploy Backend via SSH
+        env:
+          BE_VERSION: ${{ steps.vars.outputs.be_version }}
+          BE_SLOT: ${{ steps.vars.outputs.be_slot }}
+          BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
-          MIG=${{ steps.vars.outputs.mig_name }}
-          ZONE=${{ steps.vars.outputs.zone }}
-
-          gcloud compute instance-groups managed set-named-ports $MIG \
-            --zone=$ZONE \
-            --named-ports=http:8080
-
-      - name: Wait for all MIG instances to become HEALTHY
+          echo "🚀 SSH into backend-server and deploy $BE_VERSION on port $BE_PORT"
+          ssh backend-server <<'EOF'
+            set -e
+            export BE_VERSION="$BE_VERSION"
+            export BE_SLOT="$BE_SLOT"
+            export BE_PORT="$BE_PORT"
+          EOF
+      
+      - name: 🧪 Dry Run - Output Check
         run: |
-          MIG=${{ steps.vars.outputs.mig_name }}
-          ZONE=${{ steps.vars.outputs.zone }}
-
-          echo "⏳ Waiting for all instances in $MIG to become HEALTHY..."
-
-          for i in {1..30}; do
-            UNHEALTHY_COUNT=$(gcloud compute instance-groups managed list-instances $MIG \
-              --zone=$ZONE \
-              --format=json | jq '[.[] | select((.instanceHealth[0].detailedHealthState // "") != "HEALTHY")] | length')
-
-            echo "Attempt $i: Unhealthy instance count = $UNHEALTHY_COUNT"
-
-            if [ "$UNHEALTHY_COUNT" -eq 0 ]; then
-              echo "✅ All instances are HEALTHY!"
-              exit 0
-            fi
-
-            sleep 15
-          done
-
-          echo "❌ Some instances did not become healthy in time"
-          exit 1
-
-      - name: Add MIG to Backend Service
-        run: |
-          MIG=${{ steps.vars.outputs.mig_name }}
-          ZONE=${{ steps.vars.outputs.zone }}
-          BACKEND_SERVICE="onthetop-backend-service"
-
-          echo "🔄 Replacing backend in $BACKEND_SERVICE with $MIG..."
-
-          # 새 MIG 추가
-          gcloud compute backend-services add-backend $BACKEND_SERVICE \
-            --global \
-            --instance-group=$MIG \
-            --instance-group-zone=$ZONE
-
-          MIG_URL="https://www.googleapis.com/compute/v1/projects/onthetop-457202/zones/$ZONE/instanceGroups/$MIG"
-
-          echo "⏳ Waiting for LB to report $MIG as HEALTHY..."
-
-          for i in {1..20}; do
-            STATE=$(gcloud compute backend-services get-health $BACKEND_SERVICE --global --format=json |
-              jq -r --arg MIG "$MIG_URL" '
-                .[] | select(.backend == $MIG) |
-                .status.healthStatus[0].healthState // "UNKNOWN"
-              ' | tr -d '[:space:]')
-
-            echo "Attempt $i: $MIG LB health = '$STATE'"
-
-            if [ "$STATE" = "HEALTHY" ]; then
-              echo "✅ LB sees $MIG as healthy!"
-              break
-            fi
-
-            sleep 15
-          done
-
-          if [ "$STATE" != "HEALTHY" ]; then
-            echo "❌ LB never saw $MIG as healthy in time. Rolling back..."
-            gcloud compute backend-services remove-backend $BACKEND_SERVICE \
-              --global \
-              --instance-group=$MIG \
-              --instance-group-zone=$ZONE || true
-            exit 1
-          fi
-
-          # 🔁 기존 MIG 제거
-          echo "🧹 Removing old MIG from $BACKEND_SERVICE..."
-          if [[ "$MIG" == *"blue" ]]; then
-            OLD_MIG="onthetop-backend-green"
-          else
-            OLD_MIG="onthetop-backend-blue"
-          fi
-
-          gcloud compute backend-services remove-backend $BACKEND_SERVICE \
-            --global \
-            --instance-group=$OLD_MIG \
-            --instance-group-zone=$ZONE || true
+          echo "🧪 [Dry Run] Deployment Parameters"
+          echo "BE_VERSION: ${{ steps.vars.outputs.be_version }}"
+          echo "BE_SLOT: ${{ steps.vars.outputs.be_slot }}"
+          echo "BE_PORT: ${{ steps.vars.outputs.be_port }}"
+          echo "MIG_NAME: ${{ steps.vars.outputs.mig_name }}"
+          echo "INSTANCE_IP: ${{ steps.get_ip.outputs.instance_ip }}"
+      
+      
 
       # ------------------ CloudFront Origin 변경 및 무효화 ------------------
 
-  cdn-update:
-    needs: deploy
-    runs-on: ubuntu-latest
-    env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFRONT_ACCESS_KEY }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFRONT_SECRET_KEY }}
-      AWS_DEFAULT_REGION: ap-northeast-2
-      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
-    steps:
-      - name: Update CloudFront Origin
-        run: |
-          SLOT="${{ needs.deploy.outputs.fe_slot }}"
-          DIST_ID="$CLOUDFRONT_DISTRIBUTION_ID"
+  # cdn-update:
+  #   needs: deploy
+  #   runs-on: ubuntu-latest
+  #   env:
+  #     AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFRONT_ACCESS_KEY }}
+  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFRONT_SECRET_KEY }}
+  #     AWS_DEFAULT_REGION: ap-northeast-2
+  #     CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+  #   steps:
+  #     - name: Update CloudFront Origin
+  #       run: |
+  #         SLOT="${{ needs.deploy.outputs.fe_slot }}"
+  #         DIST_ID="$CLOUDFRONT_DISTRIBUTION_ID"
 
-          # 원본 전체 구성 받아오기
-          aws cloudfront get-distribution-config --id $DIST_ID > raw.json
+  #         # 원본 전체 구성 받아오기
+  #         aws cloudfront get-distribution-config --id $DIST_ID > raw.json
 
-          # ETag 추출
-          ETAG=$(jq -r '.ETag' raw.json)
+  #         # ETag 추출
+  #         ETAG=$(jq -r '.ETag' raw.json)
 
-          # DistributionConfig만 추출
-          jq '.DistributionConfig' raw.json > config-only.json
+  #         # DistributionConfig만 추출
+  #         jq '.DistributionConfig' raw.json > config-only.json
 
-          # OriginPath 수정
-          jq --arg SLOT "$SLOT" \
-            '.Origins.Items[0].OriginPath = "/frontend/prod/\($SLOT)"' \
-            config-only.json > updated-config.json
+  #         # OriginPath 수정
+  #         jq --arg SLOT "$SLOT" \
+  #           '.Origins.Items[0].OriginPath = "/frontend/prod/\($SLOT)"' \
+  #           config-only.json > updated-config.json
 
-          # 업데이트 적용
-          aws cloudfront update-distribution \
-            --id $DIST_ID \
-            --if-match $ETAG \
-            --distribution-config file://updated-config.json
+  #         # 업데이트 적용
+  #         aws cloudfront update-distribution \
+  #           --id $DIST_ID \
+  #           --if-match $ETAG \
+  #           --distribution-config file://updated-config.json
 
-      - name: Invalidate CloudFront cache
-        run: |
-          SLOT="${{ needs.deploy.outputs.fe_slot }}"
-          aws cloudfront create-invalidation \
-            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-            --paths "/" "/index.html" "/assets/*.js" "/assets/*.css"
+  #     - name: Invalidate CloudFront cache
+  #       run: |
+  #         SLOT="${{ needs.deploy.outputs.fe_slot }}"
+  #         aws cloudfront create-invalidation \
+  #           --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+  #           --paths "/" "/index.html" "/assets/*.js" "/assets/*.css"

@@ -104,7 +104,7 @@ jobs:
         run: |
           MIG=${{ steps.vars.outputs.mig_name }}
           ZONE=${{ steps.vars.outputs.zone }}
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances $MIG --zone $ZONE --format="value(instance)")
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances $MIG --region $REGION --format="value(instance)")
           INSTANCE_NAME=$(basename $INSTANCE_URL)
           IP=$(gcloud compute instances describe $INSTANCE_NAME --zone $ZONE --format="get(networkInterfaces[0].networkIP)")
 

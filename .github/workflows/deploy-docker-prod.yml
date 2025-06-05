@@ -100,38 +100,24 @@ jobs:
 
       # ------------------ BE 배포 ------------------
 
-      - name: Get MIG Instance IP (Safe & Strict)
+      - name: Get MIG Instance IP (Zonal Only)
         id: get_ip
         run: |
           MIG=${{ steps.vars.outputs.mig_name }}
-          REGION=${{ steps.vars.outputs.region }}
           ZONE=${{ steps.vars.outputs.zone }}
 
-          echo "🔍 Trying regional MIG lookup for $MIG in $REGION..."
+          echo "🔍 Zonal MIG lookup for $MIG in $ZONE..."
 
-          echo "▶ Full raw response:"
-          gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" || echo "⛔ gcloud list-instances failed"
-
-          echo "▶ Now trying formatted + grep"
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" | tee debug.txt | grep "/instances/")
-
-          echo "⏬ Raw instance URL: $INSTANCE_URL"
-
-
-          echo "⏬ Raw instance URL: $INSTANCE_URL"
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)" | grep "/instances/")
 
           if [ -z "$INSTANCE_URL" ]; then
-            echo "🌐 Regional MIG not found or empty. Trying zonal MIG..."
-            INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)" | grep "/instances/")
-            echo "⏬ Raw zonal instance URL: $INSTANCE_URL"
-          fi
-
-          if [ -z "$INSTANCE_URL" ]; then
-            echo "❌ MIG 인스턴스를 찾을 수 없습니다. MIG 이름과 REGION/ZONE을 확인하세요."
+            echo "❌ MIG 인스턴스를 찾을 수 없습니다. MIG 이름과 ZONE을 확인하세요."
             exit 1
           fi
 
-          INSTANCE_NAME=$(echo "$INSTANCE_URL" | awk -F/ '{print $NF}')
+          echo "⏬ Raw instance URL: $INSTANCE_URL"
+
+          INSTANCE_NAME=$(basename "$INSTANCE_URL")
           echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
 
           IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone "$ZONE" --format="get(networkInterfaces[0].networkIP)")
@@ -139,6 +125,7 @@ jobs:
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
           echo "instance_ip=$IP" >> $GITHUB_OUTPUT
+
 
 
 

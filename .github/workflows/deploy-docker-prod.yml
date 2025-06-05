@@ -107,22 +107,22 @@ jobs:
           ZONE=${{ steps.vars.outputs.zone }}
           REGION=${{ steps.vars.outputs.REGION }}
 
-          echo "🔍 Getting instance URL from regional MIG..."
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)")
+          echo "🔍 Getting instance URL from ZONAL MIG $MIG in $ZONE..."
 
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" \
+            --zone="$ZONE" --format="value(instance)")
 
           if [ -z "$INSTANCE_URL" ]; then
             echo "❌ MIG 인스턴스를 찾을 수 없습니다."
             exit 1
           fi
 
-          echo "▶ Instance URL: $INSTANCE_URL"
-
           INSTANCE_NAME=$(basename "$INSTANCE_URL")
-          ZONE=$(echo "$INSTANCE_URL" | awk -F/ '{print $(NF-2)}')  # URL에서 zone 추출
-          echo "✅ INSTANCE_NAME=$INSTANCE_NAME, ZONE=$ZONE"
+          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
 
-          IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone "$ZONE" --format="get(networkInterfaces[0].networkIP)")
+          IP=$(gcloud compute instances describe "$INSTANCE_NAME" \
+            --zone "$ZONE" --format="get(networkInterfaces[0].networkIP)")
+
           echo "✅ IP=$IP"
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT

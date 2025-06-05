@@ -108,7 +108,15 @@ jobs:
           ZONE=${{ steps.vars.outputs.zone }}
 
           echo "🔍 Trying regional MIG lookup for $MIG in $REGION..."
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" | grep "/instances/")
+
+          echo "▶ Full raw response:"
+          gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" || echo "⛔ gcloud list-instances failed"
+
+          echo "▶ Now trying formatted + grep"
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" | tee debug.txt | grep "/instances/")
+
+          echo "⏬ Raw instance URL: $INSTANCE_URL"
+
 
           echo "⏬ Raw instance URL: $INSTANCE_URL"
 

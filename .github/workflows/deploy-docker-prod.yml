@@ -102,8 +102,8 @@ jobs:
 
       - name: Print Instance URL from MIG
         run: |
-          MIG=onthetop-mig-prod
-          REGION=asia-northeast3
+          MIG="${{ steps.vars.outputs.mig_name }}"
+          REGION="${{ steps.vars.outputs.region }}"
 
           echo "🔍 Getting instance URL from MIG: $MIG in $REGION"
 

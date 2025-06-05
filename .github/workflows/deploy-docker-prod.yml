@@ -100,44 +100,23 @@ jobs:
 
       # ------------------ BE 배포 ------------------
 
-      - name: Get MIG Instance IP (Zonal Only)
-        id: get_ip
+      - name: Print Instance URL from MIG
         run: |
-          MIG=${{ steps.vars.outputs.mig_name }}
-          ZONE=${{ steps.vars.outputs.zone }}
-          REGION=${{ steps.vars.outputs.REGION }}
+          MIG=onthetop-mig-prod
+          REGION=asia-northeast3
 
-          echo "🔍 Getting instance from REGIONAL MIG: $MIG (region: $REGION)"
-    
-          # 1. 인스턴스 전체 URL 가져오기 (json)
+          echo "🔍 Getting instance URL from MIG: $MIG in $REGION"
+
           INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" \
             --region="$REGION" --format="value(instance)")
 
           if [ -z "$INSTANCE_URL" ]; then
-            echo "❌ MIG 인스턴스를 찾을 수 없습니다."
+            echo "❌ 인스턴스 URL이 비어 있습니다!"
             exit 1
           fi
 
-          # 2. 인스턴스 이름과 ZONE 추출
-          INSTANCE_NAME=$(basename "$INSTANCE_URL")
-          ZONE=$(echo "$INSTANCE_URL" | awk -F/ '{print $(NF-3)}')
+          echo "✅ INSTANCE_URL=$INSTANCE_URL"
 
-          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
-          echo "✅ ZONE=$ZONE"
-
-          # 3. 내부 IP 조회
-          IP=$(gcloud compute instances describe "$INSTANCE_NAME" \
-            --zone "$ZONE" \
-            --format="get(networkInterfaces[0].networkIP)")
-
-          echo "✅ INTERNAL IP = $IP"
-
-          echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
-          echo "instance_ip=$IP" >> $GITHUB_OUTPUT
-
-
-
-      
       
       - name: Set up SSH config for Jump & Target
         run: |

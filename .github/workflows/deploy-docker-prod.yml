@@ -99,6 +99,12 @@ jobs:
       #     aws s3 sync fe-dist/ s3://onthe-top/frontend/prod/${{ steps.vars.outputs.fe_slot }} --delete
 
       # ------------------ BE 배포 ------------------
+
+      - name: 🔍 Debug MIG name
+        run: |
+          echo "MIG='${{ steps.vars.outputs.mig_name }}'"
+          echo "ZONE='${{ steps.vars.outputs.zone }}'"
+
       - name: Get MIG Instance IP
         id: get_ip
         run: |
@@ -121,8 +127,8 @@ jobs:
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
           echo "instance_ip=$IP" >> $GITHUB_OUTPUT
-
-
+      
+      
       
       - name: Set up SSH config for Jump & Target
         run: |

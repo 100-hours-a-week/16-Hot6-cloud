@@ -100,24 +100,22 @@ jobs:
 
       # ------------------ BE 배포 ------------------
 
-      - name: 🔍 Debug MIG name
-        run: |
-          echo "MIG='${{ steps.vars.outputs.mig_name }}'"
-          echo "ZONE='${{ steps.vars.outputs.zone }}'"
-
-      - name: Get MIG Instance IP (Safe Fallback)
+      - name: Get MIG Instance IP (Debug Mode)
         id: get_ip
         run: |
           MIG=${{ steps.vars.outputs.mig_name }}
           REGION=${{ steps.vars.outputs.region }}
           ZONE=${{ steps.vars.outputs.zone }}
 
-          echo "🔍 Trying regional MIG lookup..."
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" 2>/dev/null | grep "instances/")
+          echo "🔍 Trying regional MIG lookup for $MIG in $REGION..."
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)")
           
+          echo "⏬ Raw instance URL: $INSTANCE_URL"
+
           if [ -z "$INSTANCE_URL" ]; then
             echo "🌐 Regional MIG not found or empty. Trying zonal MIG..."
-            INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)" 2>/dev/null | grep "instances/")
+            INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)")
+            echo "⏬ Raw zonal instance URL: $INSTANCE_URL"
           fi
 
           if [ -z "$INSTANCE_URL" ]; then
@@ -125,7 +123,6 @@ jobs:
             exit 1
           fi
 
-          echo "✅ INSTANCE_URL=$INSTANCE_URL"
           INSTANCE_NAME=$(echo "$INSTANCE_URL" | awk -F/ '{print $NF}')
           echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
 

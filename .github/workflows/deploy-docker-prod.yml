@@ -105,10 +105,9 @@ jobs:
           MIG="${{ steps.vars.outputs.mig_name }}"
           REGION="${{ steps.vars.outputs.region }}"
 
-          echo "🔍 Getting instance URL from MIG: $MIG in $REGION"
-
+          echo "🔍 Getting instance URL from Regional MIG: $MIG in $REGION"
           INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" \
-            --region="$REGION" --format="value(instance)")
+            --region="$REGION" --format="value(instance)" | head -n 1)
 
           if [ -z "$INSTANCE_URL" ]; then
             echo "❌ 인스턴스 URL이 비어 있습니다!"
@@ -116,6 +115,19 @@ jobs:
           fi
 
           echo "✅ INSTANCE_URL=$INSTANCE_URL"
+
+          INSTANCE_NAME=$(echo "$INSTANCE_URL" | awk -F/ '{print $NF}')
+          ZONE=$(echo "$INSTANCE_URL" | awk -F/ '{print $(NF-3)}')
+
+          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
+          echo "✅ ZONE=$ZONE"
+
+          IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone="$ZONE" \
+            --format="get(networkInterfaces[0].networkIP)")
+          echo "✅ IP=$IP"
+
+          echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
+          echo "instance_ip=$IP" >> $GITHUB_OUTPUT
 
       
       - name: Set up SSH config for Jump & Target

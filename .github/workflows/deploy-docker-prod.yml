@@ -109,25 +109,33 @@ jobs:
         id: get_ip
         run: |
           MIG=${{ steps.vars.outputs.mig_name }}
-          ZONE=${{ steps.vars.outputs.zone }}
+          REGION=${{ env.REGION }}
+          ZONE=${{ env.ZONE }}
 
-          # zone 기반 MIG라면 --zone 사용
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances $MIG --region=$REGION --format="value(instance)")
+          echo "🔍 Trying regional MIG lookup..."
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" 2>/dev/null)
 
           if [ -z "$INSTANCE_URL" ]; then
-            echo "❌ MIG 인스턴스를 찾을 수 없습니다. MIG 이름과 ZONE을 확인하세요."
+            echo "🌐 Regional MIG not found. Trying zonal MIG..."
+            INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)" 2>/dev/null)
+          fi
+
+          if [ -z "$INSTANCE_URL" ]; then
+            echo "❌ MIG 인스턴스를 찾을 수 없습니다. MIG 이름과 REGION/ZONE을 확인하세요."
             exit 1
           fi
 
-          INSTANCE_NAME=$(basename $INSTANCE_URL)
-          echo "INSTANCE_NAME=$INSTANCE_NAME"
+          echo "✅ INSTANCE_URL=$INSTANCE_URL"
 
-          IP=$(gcloud compute instances describe $INSTANCE_NAME --zone $ZONE --format="get(networkInterfaces[0].networkIP)")
-          echo "IP=$IP"
+          INSTANCE_NAME=$(echo "$INSTANCE_URL" | awk -F/ '{print $NF}')
+          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
+
+          IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone "$ZONE" --format="get(networkInterfaces[0].networkIP)")
+          echo "✅ IP=$IP"
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
           echo "instance_ip=$IP" >> $GITHUB_OUTPUT
-      
+
       
       
       - name: Set up SSH config for Jump & Target

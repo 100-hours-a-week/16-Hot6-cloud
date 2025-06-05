@@ -104,6 +104,7 @@ jobs:
         run: |
           MIG="${{ steps.vars.outputs.mig_name }}"
           REGION="${{ steps.vars.outputs.region }}"
+          ZONE="${{ steps.vars.outputs.zone }}"
 
           echo "🔍 Getting instance URL from ZONAL MIG: $MIG in $ZONE"
           INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" \

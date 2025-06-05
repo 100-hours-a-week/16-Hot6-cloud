@@ -108,7 +108,8 @@ jobs:
           REGION=${{ steps.vars.outputs.REGION }}
 
           echo "🔍 Getting instance URL from regional MIG..."
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)")
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)")
+
 
           if [ -z "$INSTANCE_URL" ]; then
             echo "❌ MIG 인스턴스를 찾을 수 없습니다."

@@ -100,7 +100,7 @@ jobs:
 
       # ------------------ BE 배포 ------------------
 
-      - name: Get MIG Instance IP (Debug Mode)
+      - name: Get MIG Instance IP (Safe & Strict)
         id: get_ip
         run: |
           MIG=${{ steps.vars.outputs.mig_name }}
@@ -108,13 +108,13 @@ jobs:
           ZONE=${{ steps.vars.outputs.zone }}
 
           echo "🔍 Trying regional MIG lookup for $MIG in $REGION..."
-          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)")
-          
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" | grep "/instances/")
+
           echo "⏬ Raw instance URL: $INSTANCE_URL"
 
           if [ -z "$INSTANCE_URL" ]; then
             echo "🌐 Regional MIG not found or empty. Trying zonal MIG..."
-            INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)")
+            INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" --zone="$ZONE" --format="value(instance)" | grep "/instances/")
             echo "⏬ Raw zonal instance URL: $INSTANCE_URL"
           fi
 
@@ -131,6 +131,7 @@ jobs:
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
           echo "instance_ip=$IP" >> $GITHUB_OUTPUT
+
 
 
       

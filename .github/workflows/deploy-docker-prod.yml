@@ -107,26 +107,28 @@ jobs:
           ZONE=${{ steps.vars.outputs.zone }}
           REGION=${{ steps.vars.outputs.REGION }}
 
-          echo "🔍 Listing instances in MIG: $MIG (zone: $ZONE)"
-          INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances "$MIG" \
-            --zone "$ZONE" \
-            --format="value(instance)" | awk -F/ '{print $NF}')
+          echo "🔍 Getting instance from REGIONAL MIG: $MIG (region: $REGION)"
+    
+          # 1. 인스턴스 전체 URL 가져오기 (json)
+          INSTANCE_URL=$(gcloud compute instance-groups managed list-instances "$MIG" \
+            --region="$REGION" --format="value(instance)")
 
-          if [ -z "$INSTANCE_NAME" ]; then
-            echo "❌ MIG 인스턴스 이름을 찾을 수 없습니다."
+          if [ -z "$INSTANCE_URL" ]; then
+            echo "❌ MIG 인스턴스를 찾을 수 없습니다."
             exit 1
           fi
 
-          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
+          # 2. 인스턴스 이름과 ZONE 추출
+          INSTANCE_NAME=$(basename "$INSTANCE_URL")
+          ZONE=$(echo "$INSTANCE_URL" | awk -F/ '{print $(NF-3)}')
 
+          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
+          echo "✅ ZONE=$ZONE"
+
+          # 3. 내부 IP 조회
           IP=$(gcloud compute instances describe "$INSTANCE_NAME" \
             --zone "$ZONE" \
             --format="get(networkInterfaces[0].networkIP)")
-
-          if [ -z "$IP" ]; then
-            echo "❌ 인스턴스 IP를 가져오지 못했습니다."
-            exit 1
-          fi
 
           echo "✅ INTERNAL IP = $IP"
 

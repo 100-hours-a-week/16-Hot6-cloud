@@ -100,20 +100,25 @@ jobs:
 
       # ------------------ BE 배포 ------------------
 
-      - name: Get MIG Instance IP (Region Safe)
+      - name: Get MIG Instance IP (Region Safe & Reliable)
         id: get_ip
         run: |
           MIG=${{ steps.vars.outputs.mig_name }}
           REGION=${{ steps.vars.outputs.region }}
 
-          echo "🔍 Getting instance name from Regional MIG: $MIG"
-          INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(name)" | head -n 1)
-          ZONE=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(zone)" | head -n 1)
+          echo "🔍 Getting instance info from Regional MIG: $MIG"
+          INSTANCE_INFO=$(gcloud compute instance-groups managed list-instances "$MIG" --region="$REGION" --format="value(instance)" | head -n 1)
 
-          if [ -z "$INSTANCE_NAME" ] || [ -z "$ZONE" ]; then
-            echo "❌ 인스턴스 이름 또는 ZONE을 가져오지 못했습니다."
+          if [ -z "$INSTANCE_INFO" ]; then
+            echo "❌ 인스턴스 정보를 가져오지 못했습니다."
             exit 1
           fi
+
+          echo "🔎 INSTANCE_INFO=$INSTANCE_INFO"
+
+          # 예: https://www.googleapis.com/compute/v1/projects/.../zones/asia-northeast3-a/instances/onthetop-mig-prod-lf6d
+          INSTANCE_NAME=$(echo "$INSTANCE_INFO" | awk -F/ '{print $NF}')
+          ZONE=$(echo "$INSTANCE_INFO" | awk -F/ '{print $(NF-3)}')
 
           echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
           echo "✅ ZONE=$ZONE"

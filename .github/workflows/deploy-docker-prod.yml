@@ -172,7 +172,7 @@ jobs:
       - name: Upload secrets.properties to server
         run: |
           ssh -F ~/.ssh/config backend-server 'mkdir -p ~/backend'
-          scp -F ~/.ssh/config ./secrets/secrets.properties backend-server:/home/ubuntu/backend/secrets2.properties
+          scp -F ~/.ssh/config ./secrets/secrets.properties backend-server:/home/ubuntu/backend/secrets.properties
  
 
       - name: Deploy Backend via SSH
@@ -221,15 +221,18 @@ jobs:
               #6. Docker 이미지 실행
 
               echo "🚀 Running backend Docker container on port $PORT..."
-              docker run -d \
-                --name "$CONTAINER_NAME" \
-                -p "$PORT":8080 \
-                -e SPRING_PROFILES_ACTIVE=$ENV \
-                -v "$SECRETS_FILE":/app/secrets.properties \
-                -v "$LOG_DIR":/logs \
-                luckyprice1103/onthetop-backend:$VERSION \
-                --spring.config.additional-location=file:/app/secrets.properties \
-                --logging.file.path=/logs/backend.log
+             docker run -d \
+            --name "$CONTAINER_NAME" \
+            -p "$PORT":8080 \
+            --memory=512m \
+            --cpus=0.5 \
+            -v /home/ubuntu/backend/secrets.properties:/app/secrets.properties \
+            -v /var/log/onthetop/backend:/logs \
+            -e SPRING_PROFILES_ACTIVE="$ENV" \
+            luckyprice1103/onthetop-backend:$VERSION \
+            --logging.file.path=/logs/backend.log \
+            --spring.config.additional-location=file:/app/secrets.properties
+
 
               echo "✅ Backend container is running on port $PORT"
           EOF

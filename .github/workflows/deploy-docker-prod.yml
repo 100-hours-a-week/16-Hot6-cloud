@@ -169,11 +169,13 @@ jobs:
               sudo apt update && sudo apt install -y docker.io jq gettext
               METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 
-              export VERSION="${BE_VERSION}"
-              export PORT="${BE_PORT}"
-              export SLOT="${BE_SLOT}"
-              export ENV="prod"
-              export CONTAINER_NAME="onthetop-backend-\$SLOT"
+              VERSION="${BE_VERSION}"
+              PORT="${BE_PORT}"
+              SLOT="${BE_SLOT}"
+              ENV="prod"
+              CONTAINER_NAME="onthetop-backend-\$SLOT"
+              SECRETS_FILE="/home/ubuntu/backend/secrets.properties"
+
               
 
               echo "✅ [DRY RUN] Version: \$VERSION"
@@ -186,7 +188,6 @@ jobs:
 
               # 2. Secret Manager에서 secrets.properties 생성 (확장형)
               echo "🔐 Fetching secrets from Secret Manager..."
-              SECRETS_FILE="/home/ubuntu/backend/secrets.properties"
               mkdir -p "$(dirname "$SECRETS_FILE")"
               touch "$SECRETS_FILE"
 

@@ -236,7 +236,7 @@ jobs:
                 echo "✅ Health check passed."
                 exit 0
               fi
-              sleep 5
+              sleep 10
             done
 
             echo "❌ Health check failed after 10 attempts."

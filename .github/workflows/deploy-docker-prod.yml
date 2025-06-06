@@ -161,8 +161,29 @@ jobs:
           BE_SLOT: ${{ steps.vars.outputs.be_slot }}
           BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
-          echo "🚀 SSH into backend-server and deploy $BE_VERSION on port $BE_PORT"
-          ssh backend-server "BE_VERSION=${BE_VERSION} BE_SLOT=${BE_SLOT} BE_PORT=${BE_PORT} bash ~/scripts/cicd/startup-docker-script.sh"
+          echo "▶️ Deploying backend $BE_VERSION on slot $BE_SLOT (port $BE_PORT)..."
+          ssh backend-server 'bash -s' <<EOF
+              set -e
+
+              export VERSION="${BE_VERSION}"
+              export PORT="${BE_PORT}"
+              export SLOT="${BE_SLOT}"
+              export ENV="prod"
+              export CONTAINER_NAME="backend-\$SLOT"
+
+              echo "✅ [DRY RUN] Version: \$VERSION"
+              echo "✅ [DRY RUN] Port: \$PORT"
+              echo "✅ [DRY RUN] Slot: \$SLOT"
+              echo "✅ [DRY RUN] Container Name: \$CONTAINER_NAME"
+              echo "✅ [DRY RUN] Environment: \$ENV"
+
+              echo "🔐 [DRY RUN] Would fetch secrets from Secret Manager..."
+              echo "🧹 [DRY RUN] Would remove container named \$CONTAINER_NAME if exists"
+              echo "📦 [DRY RUN] Would pull Docker image luckyprice1103/onthetop-backend:\$VERSION"
+              echo "🐳 [DRY RUN] Would run container on port \$PORT"
+              echo "🛠 [DRY RUN] Would generate Nginx config and reload"
+          EOF
+
       
       - name: Output Check
         run: |

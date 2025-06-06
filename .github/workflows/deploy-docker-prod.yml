@@ -162,7 +162,7 @@ jobs:
           BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
           echo "🚀 SSH into backend-server and deploy $BE_VERSION on port $BE_PORT"
-          scp -o ProxyJump=jump-server ./scripts/startup-docker-script.sh backend-server:~/backend-start.sh
+          scp -o ProxyJump=jump-server ./scripts/cicd/startup-docker-script.sh backend-server:~/backend-start.sh
           ssh backend-server <<'EOF'
             set -e
             chmod +x ~/backend-start.sh

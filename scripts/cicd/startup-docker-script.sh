@@ -6,18 +6,32 @@ echo "🚀 Starting backend instance bootstrap (Docker version)..."
 
 # 0. 필수 패키지 설치
 apt update && apt install -y docker.io jq
+apt install -y docker.io jq gettext
 
 # 1. 메타데이터에서 버전 정보 가져오기
-METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
-VERSION=$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/startup-version")
-PORT=$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/be-port")
-SLOT=$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/be-slot")
+
+# 환경 변수에서 우선 가져오고, 없으면 메타데이터에서 fallback
+VERSION="${BE_VERSION:-$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/startup-version")}"
+PORT="${BE_PORT:-$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/be-port")}"
+SLOT="${BE_SLOT:-$(curl -s -H "Metadata-Flavor: Google" "$METADATA_URL/be-slot")}"
 ENV="prod"
 CONTAINER_NAME="backend-$SLOT"
+NGINX_TEMPLATE="/etc/nginx/templates/backend-template.conf"
+NGINX_CONF="/etc/nginx/sites-enabled/backend.conf"
 
-echo "✅ Version: $VERSION"
-echo "✅ Port: $PORT"
-echo "✅ Environment: $ENV"
+
+echo "✅ [DRY RUN] Version: $VERSION"
+echo "✅ [DRY RUN] Port: $PORT"
+echo "✅ [DRY RUN] Slot: $SLOT"
+echo "✅ [DRY RUN] Container Name: $CONTAINER_NAME"
+echo "✅ [DRY RUN] Environment: $ENV"
+
+
+echo "🔐 [DRY RUN] Would fetch secrets from Secret Manager..."
+echo "🧹 [DRY RUN] Would remove container named $CONTAINER_NAME if exists"
+echo "📦 [DRY RUN] Would pull Docker image luckyprice1103/onthetop-backend:$VERSION"
+echo "🐳 [DRY RUN] Would run container on port $PORT"
+echo "🛠 [DRY RUN] Would generate Nginx config and reload"
 
 # 2. Secret Manager에서 secrets.properties 생성 (확장형)
 echo "🔐 Fetching secrets from Secret Manager..."
@@ -37,6 +51,7 @@ for LABEL in $SECRET_LABELS; do
 done
 
 chown ubuntu:ubuntu "$SECRETS_FILE"
+
 
 echo "✅ secrets.properties written."
 

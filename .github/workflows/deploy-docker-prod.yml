@@ -222,23 +222,24 @@ jobs:
               echo "✅ Backend container is running on port $PORT"
           EOF
 
-
       - name: Health check
+        env:
+          BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
-          echo "🩺 Health check for backend container..."
+          echo "🩺 Health check for backend container on port $BE_PORT..."
 
-          ssh -F ~/.ssh/config backend-server <<'EOF'
+          ssh -F ~/.ssh/config backend-server <<EOF
             for i in {1..10}; do
-              echo " [$i/10] Waiting for backend health..."
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/v1/health || echo "000")
-              if [ "$STATUS" = "200" ]; then
-                echo " Health check passed."
+              echo " [$i/10] Waiting for backend health on port $BE_PORT..."
+              STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$BE_PORT/api/v1/health || echo "000")
+              if [ "\$STATUS" = "200" ]; then
+                echo "✅ Health check passed."
                 exit 0
               fi
               sleep 5
             done
 
-            echo " Health check 실패"
+            echo "❌ Health check failed after 10 attempts."
             exit 1
           EOF
       

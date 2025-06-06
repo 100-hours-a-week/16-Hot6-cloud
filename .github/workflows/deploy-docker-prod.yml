@@ -251,7 +251,7 @@ jobs:
         run: |
           echo " Switching Nginx to $BE_SLOT (port $BE_PORT)..."
 
-          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<'EOF'
+          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF
             set -e
             NGINX_CONF="/etc/nginx/sites-enabled/backend"
 

@@ -175,7 +175,7 @@ jobs:
           scp -F ~/.ssh/config ./secrets/secrets.properties backend-server:/home/ubuntu/backend/secrets.properties
  
 
-      - name: Deploy Backend via SSH
+      - name: Deploy Dcoker Backend via SSH
         env:
           BE_VERSION: ${{ steps.vars.outputs.be_version }}
           BE_SLOT: ${{ steps.vars.outputs.be_slot }}
@@ -242,7 +242,62 @@ jobs:
             echo "❌ Health check failed after 10 attempts."
             exit 1
           EOF
-      
+          
+      - name: Test Nginx config for new backend slot
+        env:
+          BE_SLOT: ${{ steps.vars.outputs.be_slot }}
+          BE_PORT: ${{ steps.vars.outputs.be_port }}
+        run: |
+          echo "🧪 Testing Nginx config for slot $BE_SLOT (port $BE_PORT)..."
+
+          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<'EOF'
+            set -e
+            TEST_CONF="/tmp/backend.test.conf"
+
+            echo "server {
+              listen 80;
+              server_name _;
+              location / {
+                proxy_pass http://localhost:${BE_PORT};
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              }
+            }" | tee \$TEST_CONF > /dev/null
+
+            echo "✅ Config written to \$TEST_CONF"
+            echo "🔍 Testing Nginx syntax..."
+            sudo nginx -t -c \$TEST_CONF
+          EOF
+
+      # - name: Switch Nginx to new backend slot
+      #   env:
+      #     BE_SLOT: ${{ steps.vars.outputs.be_slot }}
+      #     BE_PORT: ${{ steps.vars.outputs.be_port }}
+      #   run: |
+      #     echo " Switching Nginx to $BE_SLOT (port $BE_PORT)..."
+
+      #     ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<'EOF'
+      #       set -e
+      #       NGINX_CONF="/etc/nginx/sites-enabled/backend"
+
+      #       echo "server {
+      #         listen 80;
+      #         server_name _;
+      #         location / {
+      #           proxy_pass http://localhost:${BE_PORT};
+      #           proxy_set_header Host \$host;
+      #           proxy_set_header X-Real-IP \$remote_addr;
+      #           proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+      #         }
+      #       }" | sudo tee \$NGINX_CONF > /dev/null
+
+      #       echo "✅ Nginx config updated to route to port \$BE_PORT"
+      #       echo "🔄 Reloading Nginx..."
+      #       sudo nginx -t && sudo systemctl reload nginx
+      #     EOF
+
+
       - name: Output Check
         run: |
           echo "[Dry Run] Deployment Parameters"
@@ -251,9 +306,6 @@ jobs:
           echo "BE_PORT: ${{ steps.vars.outputs.be_port }}"
           echo "MIG_NAME: ${{ steps.vars.outputs.mig_name }}"
           echo "INSTANCE_IP: ${{ steps.get_ip.outputs.instance_ip }}"
-      
-      
-
       # ------------------ CloudFront Origin 변경 및 무효화 ------------------
 
   # cdn-update:

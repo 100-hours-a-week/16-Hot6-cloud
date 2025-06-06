@@ -202,8 +202,7 @@ jobs:
               echo "✅ [DRY RUN] Environment: \$ENV"
 
               # 3. 로그 디렉토리 생성
-              LOG_DIR="/var/log/onthetop/backend"
-              mkdir -p "$LOG_DIR"
+              mkdir -p /var/log/onthetop/backend
               chown -R ubuntu:ubuntu "$LOG_DIR"
 
               # 4. 이전 컨테이너 제거

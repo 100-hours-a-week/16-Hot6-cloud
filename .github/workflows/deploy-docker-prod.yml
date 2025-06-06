@@ -174,7 +174,7 @@ jobs:
               SLOT="${BE_SLOT}"
               ENV="prod"
               CONTAINER_NAME="onthetop-backend-\$SLOT"
-              SECRETS_FILE="/home/ubuntu/backend/secrets.properties"
+              
 
               
 
@@ -188,6 +188,7 @@ jobs:
 
               # 2. Secret Manager에서 secrets.properties 생성 (확장형)
               echo "🔐 Fetching secrets from Secret Manager..."
+              SECRETS_FILE="/home/ubuntu/backend/secrets.properties"
               mkdir -p "$(dirname "$SECRETS_FILE")"
               touch "$SECRETS_FILE"
 

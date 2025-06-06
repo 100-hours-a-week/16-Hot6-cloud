@@ -186,7 +186,7 @@ jobs:
 
               echo "🔐 Fetching secrets from Secret Manager..."
 
-              SECRETS_FILE="/home/ubuntu/backend/secrets.properties"
+              SECRETS_FILE="/home/ubuntu/backend/secrets2.properties"
               mkdir -p "$(dirname "$SECRETS_FILE")"
               touch "$SECRETS_FILE"
 

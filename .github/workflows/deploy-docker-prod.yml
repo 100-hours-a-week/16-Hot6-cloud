@@ -250,10 +250,9 @@ jobs:
         run: |
           echo " Testing Nginx config for slot $BE_SLOT (port $BE_PORT)..."
 
-          ssh -F ~/.ssh/config backend-server <<EOF
+          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<'EOF'
             set -e
             TEST_CONF="/tmp/backend.test.conf"
-
             echo "worker_processes 1;
             events {}
 
@@ -268,11 +267,11 @@ jobs:
                   proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
                 }
               }
-            }" | sudo tee \$TEST_CONF > /dev/null
+            }" | sudo tee $TEST_CONF > /dev/null
 
-            echo "✅ Config written to \$TEST_CONF"
+            echo "✅ Config written to $TEST_CONF"
             echo "🔍 Testing Nginx syntax..."
-            sudo nginx -t -c \$TEST_CONF
+            sudo nginx -t -c $TEST_CONF
           EOF
 
       # - name: Switch Nginx to new backend slot

@@ -250,7 +250,7 @@ jobs:
         run: |
           echo "🧪 Testing config generation for slot $BE_SLOT (port $BE_PORT)..."
 
-          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF'
+          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF
             set -e
             TEST_CONF="/tmp/backend.test.conf"
 

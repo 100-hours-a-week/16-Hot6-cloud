@@ -104,26 +104,29 @@ jobs:
         run: |
           MIG="${{ steps.vars.outputs.mig_name }}"
           REGION="${{ steps.vars.outputs.region }}"
+          ZONE="${{ env.ZONE }}"
 
-          echo "🔍 Getting instance URL from MIG: $MIG in $REGION"
+          echo "🔍 Getting instance from MIG: $MIG in $REGION"
 
-          INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances $MIG \
-            --region=$REGION \
-            --format="value(instance)" | awk -F/ '{print $NF}')
+          INSTANCE_NAME=$(gcloud compute instance-groups managed list-instances "$MIG" \
+            --region="$REGION" \
+            --format="get(instance)" | sed -n 's|.*/||p')
 
           if [ -z "$INSTANCE_NAME" ]; then
             echo "❌ MIG 인스턴스를 찾을 수 없습니다. MIG 이름과 REGION을 확인하세요."
             exit 1
           fi
 
-          echo "INSTANCE_NAME=$INSTANCE_NAME"
+          echo "✅ INSTANCE_NAME=$INSTANCE_NAME"
 
-          IP=$(gcloud compute instances describe $INSTANCE_NAME --zone $ZONE --format="get(networkInterfaces[0].networkIP)")
+          IP=$(gcloud compute instances describe "$INSTANCE_NAME" --zone "$ZONE" \
+            --format="get(networkInterfaces[0].networkIP)")
 
-          echo "IP=$IP"
+          echo "✅ IP=$IP"
 
           echo "instance_name=$INSTANCE_NAME" >> $GITHUB_OUTPUT
           echo "instance_ip=$IP" >> $GITHUB_OUTPUT
+
       
       - name: Set up SSH config for Jump & Target
         run: |

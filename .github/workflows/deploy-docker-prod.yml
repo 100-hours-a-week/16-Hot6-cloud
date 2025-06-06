@@ -250,26 +250,24 @@ jobs:
         run: |
           echo "🧪 Testing config generation for slot $BE_SLOT (port $BE_PORT)..."
 
-          ssh -F ~/.ssh/config backend-server <<EOF
-      set -e
-      TEST_CONF="/tmp/backend.test.conf"
-      BE_PORT=${BE_PORT}
+          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF'
+            set -e
+            TEST_CONF="/tmp/backend.test.conf"
 
-      sudo tee "\$TEST_CONF" > /dev/null <<EOCONF
-      server {
-        listen 80;
-        server_name _;
-        location / {
-          proxy_pass http://localhost:\${BE_PORT};
-          proxy_set_header Host \$host;
-          proxy_set_header X-Real-IP \$remote_addr;
-          proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        }
-      }
-      EOCONF
+            echo "server {
+              listen 80;
+              server_name _;
+              location / {
+                proxy_pass http://localhost:${BE_PORT};
+                proxy_set_header Host \$host;
+                proxy_set_header X-Real-IP \$remote_addr;
+                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+              }
+              1
+            }" | sudo tee \$TEST_CONF > /dev/null
 
-      echo "✅ Test config written to \$TEST_CONF"
-      EOF
+            echo "✅ Test config written to \$TEST_CONF"
+          EOF
 
 
       # - name: Switch Nginx to new backend slot

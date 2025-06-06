@@ -201,9 +201,6 @@ jobs:
               echo "✅ [DRY RUN] Container Name: \$CONTAINER_NAME"
               echo "✅ [DRY RUN] Environment: \$ENV"
 
-              # 3. 로그 디렉토리 생성
-              mkdir -p /var/log/onthetop/backend
-              chown -R ubuntu:ubuntu "$LOG_DIR"
 
               # 4. 이전 컨테이너 제거
               echo "🧹 Cleaning up old container named $CONTAINER_NAME..."

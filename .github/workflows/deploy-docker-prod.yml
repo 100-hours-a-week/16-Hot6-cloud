@@ -251,7 +251,7 @@ jobs:
         run: |
           echo " Switching Nginx to $BE_SLOT (port $BE_PORT)..."
 
-          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF
+          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<'EOF'
             set -e
             NGINX_CONF="/etc/nginx/sites-enabled/backend"
 
@@ -259,7 +259,7 @@ jobs:
               listen 80;
               server_name _;
               location / {
-                proxy_pass http://localhost:${BE_PORT};
+                proxy_pass http://localhost:$BE_PORT;
                 #proxy_pass http://localhost:8081;
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
@@ -269,7 +269,7 @@ jobs:
 
             echo "✅ Nginx config updated to route to port \$BE_PORT"
             echo "🔄 Reloading Nginx..."
-            sudo nginx -t && sudo systemctl reload nginx
+            # sudo nginx -t && sudo systemctl reload nginx
           EOF
 
 

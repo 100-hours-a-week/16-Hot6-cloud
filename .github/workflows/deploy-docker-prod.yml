@@ -155,118 +155,92 @@ jobs:
               UserKnownHostsFile /dev/null
           EOF
 
-      # - name: Generate secrets.properties file
-      #   run: |
-      #     mkdir -p ./secrets
-      #     touch ./secrets/secrets.properties
-      #     SECRET_LABELS="backend_shared backend_prod"
+      - name: Generate secrets.properties file
+        run: |
+          mkdir -p ./secrets
+          touch ./secrets/secrets.properties
+          SECRET_LABELS="backend_shared backend_prod"
 
-      #     for LABEL in $SECRET_LABELS; do
-      #       gcloud secrets list --filter="labels.env=$LABEL" --format="value(name)" | while read SECRET_NAME; do
-      #         SECRET_VALUE=$(gcloud secrets versions access latest --secret="$SECRET_NAME")
-      #         IFS='-' read -r SERVICE KEY ENV <<< "$SECRET_NAME"
-      #         echo "${KEY}=${SECRET_VALUE}" >> ./secrets/secrets.properties
-      #       done
-      #     done
+          for LABEL in $SECRET_LABELS; do
+            gcloud secrets list --filter="labels.env=$LABEL" --format="value(name)" | while read SECRET_NAME; do
+              SECRET_VALUE=$(gcloud secrets versions access latest --secret="$SECRET_NAME")
+              IFS='-' read -r SERVICE KEY ENV <<< "$SECRET_NAME"
+              echo "${KEY}=${SECRET_VALUE}" >> ./secrets/secrets.properties
+            done
+          done
 
-      # - name: Upload secrets.properties to server
-      #   run: |
-      #     ssh -F ~/.ssh/config backend-server 'mkdir -p ~/backend'
-      #     scp -F ~/.ssh/config ./secrets/secrets.properties backend-server:/home/ubuntu/backend/secrets.properties
+      - name: Upload secrets.properties to server
+        run: |
+          ssh -F ~/.ssh/config backend-server 'mkdir -p ~/backend'
+          scp -F ~/.ssh/config ./secrets/secrets.properties backend-server:/home/ubuntu/backend/secrets.properties
  
 
-      # - name: Deploy Dcoker Backend via SSH
-      #   env:
-      #     BE_VERSION: ${{ steps.vars.outputs.be_version }}
-      #     BE_SLOT: ${{ steps.vars.outputs.be_slot }}
-      #     BE_PORT: ${{ steps.vars.outputs.be_port }}
-      #   run: |
-      #     echo "▶️ Deploying backend $BE_VERSION on slot $BE_SLOT (port $BE_PORT)..."
-      #     ssh backend-server "BE_VERSION=${BE_VERSION} BE_SLOT=${BE_SLOT} BE_PORT=${BE_PORT} bash -s" <<'EOF'
-      #         set -e
-
-      #         # 0. 필수 패키지 설치
-      #         sudo apt update && sudo apt install -y docker.io jq gettext
-
-      #         VERSION="$BE_VERSION"
-      #         SLOT="$BE_SLOT"
-      #         PORT="$BE_PORT"
-      #         ENV="prod"
-      #         CONTAINER_NAME="onthetop-backend-${SLOT}"
-
-      #         # 2. 이전 같은 slot 컨테이너 있다면 제거
-      #         echo "🧹 Cleaning up old container named $CONTAINER_NAME..."
-      #         EXISTING_CONTAINER=$(docker ps -aq --filter "name=^/$CONTAINER_NAME\$" || true)
-      #         if [ -n "$EXISTING_CONTAINER" ]; then
-      #           docker rm -f "$EXISTING_CONTAINER"
-      #         fi
-
-      #         # 3. Docker 이미지 pull
-      #         echo " Pulling Docker image luckyprice1103/onthetop-backend:$VERSION"
-      #         docker pull luckyprice1103/onthetop-backend:$VERSION
-
-      #         # 4. Docker 이미지 실행
-      #         echo "🚀 Running backend Docker container on port $PORT..."
-      #         docker run -d \
-      #           --name "$CONTAINER_NAME" \
-      #           -p "$PORT":8080 \
-      #           --memory=512m \
-      #           --cpus=0.5 \
-      #           -v /home/ubuntu/backend/secrets.properties:/app/secrets.properties \
-      #           -v /var/log/onthetop/backend:/logs \
-      #           -e SPRING_PROFILES_ACTIVE="$ENV" \
-      #           luckyprice1103/onthetop-backend:$VERSION \
-      #           --logging.file.path=/logs/backend.log \
-      #           --spring.config.additional-location=file:/app/secrets.properties
-
-      #         echo "✅ Backend container is running on port $PORT"
-      #     EOF
-
-      # - name: Health check
-      #   env:
-      #     BE_PORT: ${{ steps.vars.outputs.be_port }}
-      #   run: |
-      #     echo "🩺 Health check for backend container on port $BE_PORT..."
-
-      #     ssh -F ~/.ssh/config backend-server <<EOF
-      #       for i in {1..10}; do
-      #         echo " [$i/10] Waiting for backend health on port $BE_PORT..."
-      #         STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$BE_PORT/api/v1/health || echo "000")
-      #         if [ "\$STATUS" = "200" ]; then
-      #           echo "✅ Health check passed."
-      #           exit 0
-      #         fi
-      #         sleep 10
-      #       done
-
-      #       echo "❌ Health check failed after 10 attempts."
-      #       exit 1
-      #     EOF
-
-      - name: Test writing Nginx config for new backend slot
+      - name: Deploy Dcoker Backend via SSH
         env:
+          BE_VERSION: ${{ steps.vars.outputs.be_version }}
           BE_SLOT: ${{ steps.vars.outputs.be_slot }}
           BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
-          echo "🧪 Testing config generation for slot $BE_SLOT (port $BE_PORT)..."
+          echo "▶️ Deploying backend $BE_VERSION on slot $BE_SLOT (port $BE_PORT)..."
+          ssh backend-server "BE_VERSION=${BE_VERSION} BE_SLOT=${BE_SLOT} BE_PORT=${BE_PORT} bash -s" <<'EOF'
+              set -e
 
-          ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF
-            set -e
-            TEST_CONF="/tmp/backend.test.conf"
+              # 0. 필수 패키지 설치
+              sudo apt update && sudo apt install -y docker.io jq gettext
 
-            echo "server {
-              listen 80;
-              server_name _;
-              location / {
-                proxy_pass http://localhost:${BE_PORT};
-                proxy_set_header Host \$host;
-                proxy_set_header X-Real-IP \$remote_addr;
-                proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-              }
-              2
-            }" | sudo tee \$TEST_CONF > /dev/null
+              VERSION="$BE_VERSION"
+              SLOT="$BE_SLOT"
+              PORT="$BE_PORT"
+              ENV="prod"
+              CONTAINER_NAME="onthetop-backend-${SLOT}"
 
-            echo "✅ Test config written to \$TEST_CONF"
+              # 2. 이전 같은 slot 컨테이너 있다면 제거
+              echo "🧹 Cleaning up old container named $CONTAINER_NAME..."
+              EXISTING_CONTAINER=$(docker ps -aq --filter "name=^/$CONTAINER_NAME\$" || true)
+              if [ -n "$EXISTING_CONTAINER" ]; then
+                docker rm -f "$EXISTING_CONTAINER"
+              fi
+
+              # 3. Docker 이미지 pull
+              echo " Pulling Docker image luckyprice1103/onthetop-backend:$VERSION"
+              docker pull luckyprice1103/onthetop-backend:$VERSION
+
+              # 4. Docker 이미지 실행
+              echo "🚀 Running backend Docker container on port $PORT..."
+              docker run -d \
+                --name "$CONTAINER_NAME" \
+                -p "$PORT":8080 \
+                --memory=512m \
+                --cpus=0.5 \
+                -v /home/ubuntu/backend/secrets.properties:/app/secrets.properties \
+                -v /var/log/onthetop/backend:/logs \
+                -e SPRING_PROFILES_ACTIVE="$ENV" \
+                luckyprice1103/onthetop-backend:$VERSION \
+                --logging.file.path=/logs/backend.log \
+                --spring.config.additional-location=file:/app/secrets.properties
+
+              echo "✅ Backend container is running on port $PORT"
+          EOF
+
+      - name: Health check
+        env:
+          BE_PORT: ${{ steps.vars.outputs.be_port }}
+        run: |
+          echo "🩺 Health check for backend container on port $BE_PORT..."
+
+          ssh -F ~/.ssh/config backend-server <<EOF
+            for i in {1..10}; do
+              echo " [$i/10] Waiting for backend health on port $BE_PORT..."
+              STATUS=\$(curl -s -o /dev/null -w "%{http_code}" http://localhost:$BE_PORT/api/v1/health || echo "000")
+              if [ "\$STATUS" = "200" ]; then
+                echo "✅ Health check passed."
+                exit 0
+              fi
+              sleep 10
+            done
+
+            echo "❌ Health check failed after 10 attempts."
+            exit 1
           EOF
 
 
@@ -286,7 +260,7 @@ jobs:
               server_name _;
               location / {
                 # proxy_pass http://localhost:${BE_PORT};
-                proxy_pass http://localhost:8080;
+                proxy_pass http://localhost:8081;
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -295,7 +269,7 @@ jobs:
 
             echo "✅ Nginx config updated to route to port \$BE_PORT"
             echo "🔄 Reloading Nginx..."
-            # sudo nginx -t && sudo systemctl reload nginx
+            sudo nginx -t && sudo systemctl reload nginx
           EOF
 
 

@@ -37,8 +37,8 @@ jobs:
       ZONE: asia-northeast3-a
       GH_FE_REPO: 100-hours-a-week/16-Hot6-fe
       BE_VERSION: "1.0.1"
-      BE_SLOT: "green"
-      BE_PORT: "8081"
+      BE_SLOT: "blue"
+      # BE_PORT: "8080"
 
     steps:
       - name: Checkout Infra Repo
@@ -170,9 +170,9 @@ jobs:
             export BE_PORT="$BE_PORT"
           EOF
       
-      - name: 🧪 Dry Run - Output Check
+      - name: Output Check
         run: |
-          echo "🧪 [Dry Run] Deployment Parameters"
+          echo "[Dry Run] Deployment Parameters"
           echo "BE_VERSION: ${{ steps.vars.outputs.be_version }}"
           echo "BE_SLOT: ${{ steps.vars.outputs.be_slot }}"
           echo "BE_PORT: ${{ steps.vars.outputs.be_port }}"

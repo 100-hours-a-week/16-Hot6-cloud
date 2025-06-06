@@ -166,8 +166,8 @@ jobs:
               set -e
 
               # 0. 필수 패키지 설치
-              apt update && apt install -y docker.io jq
-              apt install -y docker.io jq gettext
+              sudo apt update && apt install -y docker.io jq
+              sudo apt install -y docker.io jq gettext
               METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 
               export VERSION="${BE_VERSION}"

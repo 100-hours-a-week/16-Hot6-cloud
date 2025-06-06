@@ -36,7 +36,7 @@ jobs:
       REGION: asia-northeast3
       ZONE: asia-northeast3-a
       GH_FE_REPO: 100-hours-a-week/16-Hot6-fe
-      BE_VERSION: "v0.0.1"
+      BE_VERSION: "v1.0.1"
       BE_SLOT: "green"
 
     steps:

@@ -30,8 +30,8 @@ jobs:
       REGION: asia-northeast3
       ZONE: asia-northeast3-a
       GH_FE_REPO: 100-hours-a-week/16-Hot6-fe
-      BE_VERSION: "v1.0.1"
-      BE_SLOT: "blue"
+      # BE_VERSION: "v1.0.1"
+      # BE_SLOT: "blue"
 
     steps:
       - name: Checkout Infra Repo
@@ -48,10 +48,10 @@ jobs:
       - name: Set variables
         id: vars
         run: |
-          # BE_VERSION="${{ github.event.inputs.be_version }}"
-          # BE_SLOT="${{ github.event.inputs.be_slot }}"
-          # FE_VERSION="${{ github.event.inputs.fe_version }}"
-          # FE_SLOT="${{ github.event.inputs.fe_slot }}"
+          BE_VERSION="${{ github.event.inputs.be_version }}"
+          BE_SLOT="${{ github.event.inputs.be_slot }}"
+          FE_VERSION="${{ github.event.inputs.fe_version }}"
+          FE_SLOT="${{ github.event.inputs.fe_slot }}"
           REGION="${{ env.REGION }}"
           ZONE="${{ env.ZONE }}"
 
@@ -62,8 +62,6 @@ jobs:
             BE_PORT=8081
           fi
       
-          TEMPLATE_NAME="onthetop-backend-${BE_SLOT}-v${BE_VERSION//./-}"
-          # MIG_NAME="onthetop-backend-${BE_SLOT}"
           MIG_NAME="onthetop-mig-prod"
       
           echo "be_version=$BE_VERSION" >> $GITHUB_OUTPUT
@@ -73,7 +71,6 @@ jobs:
           echo "fe_slot=$FE_SLOT" >> $GITHUB_OUTPUT
           echo "region=$REGION" >> $GITHUB_OUTPUT
           echo "zone=$ZONE" >> $GITHUB_OUTPUT
-          echo "template_name=$TEMPLATE_NAME" >> $GITHUB_OUTPUT
           echo "mig_name=$MIG_NAME" >> $GITHUB_OUTPUT
 
       # ------------------ FE 업로드 ------------------

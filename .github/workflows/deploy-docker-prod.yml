@@ -258,19 +258,19 @@ jobs:
             echo "server {
               listen 80;
               server_name _;
-              #hi
               location / {
-                proxy_pass http://localhost:8081;
+                proxy_pass http://localhost:${BE_PORT};
+                #proxy_pass http://localhost:8081;
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
               }
             }" | sudo tee \$NGINX_CONF > /dev/null
 
-            echo "✅ Nginx config updated to route to port \$PORT"
+            echo "✅ Nginx config updated to route to port \$BE_PORT"
             echo "🔄 Reloading Nginx..."
             sudo nginx -t
-            # && sudo systemctl reload nginx
+            && sudo systemctl reload nginx
           EOF
 
 

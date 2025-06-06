@@ -263,7 +263,7 @@ jobs:
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
               }
-              1
+              2
             }" | sudo tee \$TEST_CONF > /dev/null
 
             echo "✅ Test config written to \$TEST_CONF"

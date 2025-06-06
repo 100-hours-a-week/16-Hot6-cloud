@@ -269,7 +269,8 @@ jobs:
 
             echo "✅ Nginx config updated to route to port \$BE_PORT"
             echo "🔄 Reloading Nginx..."
-            # sudo nginx -t && sudo systemctl reload nginx
+            sudo nginx -t
+            # && sudo systemctl reload nginx
           EOF
 
 

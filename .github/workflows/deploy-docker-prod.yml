@@ -176,8 +176,6 @@ jobs:
               CONTAINER_NAME="onthetop-backend-\$SLOT"
               
 
-              
-
               echo "✅ [DRY RUN] Version: \$VERSION"
               echo "✅ [DRY RUN] Port: \$PORT"
               echo "✅ [DRY RUN] Slot: \$SLOT"
@@ -185,9 +183,10 @@ jobs:
               echo "✅ [DRY RUN] Environment: \$ENV"
 
 
-
               # 2. Secret Manager에서 secrets.properties 생성 (확장형)
+
               echo "🔐 Fetching secrets from Secret Manager..."
+
               SECRETS_FILE="/home/ubuntu/backend/secrets.properties"
               mkdir -p "$(dirname "$SECRETS_FILE")"
               touch "$SECRETS_FILE"

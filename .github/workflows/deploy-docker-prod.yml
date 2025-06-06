@@ -255,18 +255,16 @@ jobs:
             set -e
             NGINX_CONF="/etc/nginx/sites-enabled/backend"
 
-            sudo tee \$NGINX_CONF > /dev/null <<'EOCONF'
-      server {
-        listen 80;
-        server_name _;
-        location / {
-          proxy_pass http://localhost:$BE_PORT;
-          proxy_set_header Host \$host;
-          proxy_set_header X-Real-IP \$remote_addr;
-          proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
-        }
-      }
-      EOCONF
+            echo "server {
+              listen 80;
+              server_name _;
+              location / {
+                proxy_pass http://localhost:$BE_PORT;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              }
+            }" | sudo tee \$NGINX_CONF > /dev/null
 
             echo "✅ Nginx config updated to route to port \$BE_PORT"
             echo "🔄 Reloading Nginx..."

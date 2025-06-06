@@ -155,6 +155,26 @@ jobs:
               UserKnownHostsFile /dev/null
           EOF
 
+      - name: Generate secrets.properties file
+        run: |
+          mkdir -p ./secrets
+          touch ./secrets/secrets.properties
+          SECRET_LABELS="backend_shared backend_prod"
+
+          for LABEL in $SECRET_LABELS; do
+            gcloud secrets list --filter="labels.env=$LABEL" --format="value(name)" | while read SECRET_NAME; do
+              SECRET_VALUE=$(gcloud secrets versions access latest --secret="$SECRET_NAME")
+              IFS='-' read -r SERVICE KEY ENV <<< "$SECRET_NAME"
+              echo "${KEY}=${SECRET_VALUE}" >> ./secrets/secrets.properties
+            done
+          done
+
+      - name: Upload secrets.properties to server
+        run: |
+          ssh -F ~/.ssh/config backend-server 'mkdir -p ~/backend'
+          scp -F ~/.ssh/config ./secrets/secrets.properties backend-server:/home/ubuntu/backend/secrets.properties
+ 
+
       - name: Deploy Backend via SSH
         env:
           BE_VERSION: ${{ steps.vars.outputs.be_version }}
@@ -180,30 +200,6 @@ jobs:
               echo "✅ [DRY RUN] Slot: \$SLOT"
               echo "✅ [DRY RUN] Container Name: \$CONTAINER_NAME"
               echo "✅ [DRY RUN] Environment: \$ENV"
-
-
-              # 2. Secret Manager에서 secrets.properties 생성 (확장형)
-
-              echo "🔐 Fetching secrets from Secret Manager..."
-
-              SECRETS_FILE="/home/ubuntu/backend/secrets2.properties"
-              mkdir -p "$(dirname "$SECRETS_FILE")"
-              touch "$SECRETS_FILE"
-
-              SECRET_LABELS="backend_shared backend_prod"
-
-              for LABEL in $SECRET_LABELS; do
-                gcloud secrets list --filter="labels.env=$LABEL" --format="value(name)" | while read SECRET_NAME; do
-                  SECRET_VALUE=$(gcloud secrets versions access latest --secret="$SECRET_NAME")
-                  IFS='-' read -r SERVICE KEY ENV <<< "$SECRET_NAME"
-                  echo "${KEY}=${SECRET_VALUE}" >> "$SECRETS_FILE"
-                done
-              done
-
-              chown ubuntu:ubuntu "$SECRETS_FILE"
-
-              echo "✅ secrets.properties written."
-
 
               # 3. 로그 디렉토리 생성
               LOG_DIR="/var/log/onthetop/backend"

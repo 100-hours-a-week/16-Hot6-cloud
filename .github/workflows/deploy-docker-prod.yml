@@ -17,7 +17,7 @@
       #   description: 'FE 슬롯 선택 (예: blue, green)'
       #   required: true
       #   default: 'green'
-name: Deploy Docker Prod (Temporary Hardcoded)
+name: Deploy Docker Prod (Slot Temporary Hardcoded)
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
       ZONE: asia-northeast3-a
       GH_FE_REPO: 100-hours-a-week/16-Hot6-fe
       BE_VERSION: "1.0.1"
-      BE_SLOT: "blue"
+      BE_SLOT: "green"
 
     steps:
       - name: Checkout Infra Repo
@@ -99,7 +99,7 @@ jobs:
 
       # ------------------ BE 배포 ------------------
 
-      - name: Print Instance URL from MIG
+      - name: Find Instance URL from MIG
         id: get_ip
         run: |
           MIG="${{ steps.vars.outputs.mig_name }}"
@@ -162,11 +162,12 @@ jobs:
           BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
           echo "🚀 SSH into backend-server and deploy $BE_VERSION on port $BE_PORT"
+          scp -o ProxyJump=jump-server ./scripts/startup-docker-script.sh backend-server:~/backend-start.sh
           ssh backend-server <<'EOF'
             set -e
-            export BE_VERSION="$BE_VERSION"
-            export BE_SLOT="$BE_SLOT"
-            export BE_PORT="$BE_PORT"
+            chmod +x ~/backend-start.sh
+            echo "▶️ Running backend-start.sh with env vars..."
+            sudo env BE_VERSION="$BE_VERSION" BE_SLOT="$BE_SLOT" BE_PORT="$BE_PORT" bash ~/backend-start.sh
           EOF
       
       - name: Output Check

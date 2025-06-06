@@ -175,11 +175,11 @@ jobs:
               CONTAINER_NAME="onthetop-backend-$SLOT"
               
 
-              echo "✅ [DRY RUN] Version: \$VERSION"
-              echo "✅ [DRY RUN] Port: \$PORT"
-              echo "✅ [DRY RUN] Slot: \$SLOT"
-              echo "✅ [DRY RUN] Container Name: \$CONTAINER_NAME"
-              echo "✅ [DRY RUN] Environment: \$ENV"
+              echo "✅ [DRY RUN] Version: $VERSION"
+              echo "✅ [DRY RUN] Port: $PORT"
+              echo "✅ [DRY RUN] Slot: $SLOT"
+              echo "✅ [DRY RUN] Container Name: $CONTAINER_NAME"
+              echo "✅ [DRY RUN] Environment: $ENV"
 
 
               # 2. Secret Manager에서 secrets.properties 생성 (확장형)

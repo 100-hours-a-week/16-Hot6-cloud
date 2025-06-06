@@ -253,15 +253,13 @@ jobs:
 
           ssh -F ~/.ssh/config backend-server BE_PORT=$BE_PORT bash -s <<EOF
             set -e
-
-            PORT=${BE_PORT}
             NGINX_CONF="/etc/nginx/sites-enabled/backend"
 
             echo "server {
               listen 80;
               server_name _;
               location / {
-                proxy_pass http://localhost:\$PORT;
+                proxy_pass http://localhost:${BE_PORT};
                 proxy_set_header Host \$host;
                 proxy_set_header X-Real-IP \$remote_addr;
                 proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;

@@ -182,25 +182,23 @@ jobs:
           BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
           echo "▶️ Deploying backend $BE_VERSION on slot $BE_SLOT (port $BE_PORT)..."
-          ssh backend-server 'bash -s' <<'EOF'
+          ssh backend-server "BE_VERSION=${BE_VERSION} BE_SLOT=${BE_SLOT} BE_PORT=${BE_PORT} bash -s" <<'EOF'
               set -e
 
               # 0. 필수 패키지 설치
               sudo apt update && sudo apt install -y docker.io jq gettext
 
-              VERSION="${BE_VERSION}"
-              SLOT="${BE_SLOT}"
-              PORT="${BE_PORT}"
+              VERSION="$BE_VERSION"
+              SLOT="$BE_SLOT"
+              PORT="$BE_PORT"
               ENV="prod"
-              CONTAINER_NAME="onthetop-backend-${BE_SLOT}"
-              
+              CONTAINER_NAME="onthetop-backend-${SLOT}"
 
-              echo "✅ [DRY RUN] Version: \$VERSION"
-              echo "✅ [DRY RUN] Port: \$PORT"
-              echo "✅ [DRY RUN] Slot: \$SLOT"
-              echo "✅ [DRY RUN] Container Name: \$CONTAINER_NAME"
-              echo "✅ [DRY RUN] Environment: \$ENV"
-
+              echo "✅ [DRY RUN] Version: $VERSION"
+              echo "✅ [DRY RUN] Port: $PORT"
+              echo "✅ [DRY RUN] Slot: $SLOT"
+              echo "✅ [DRY RUN] Container Name: $CONTAINER_NAME"
+              echo "✅ [DRY RUN] Environment: $ENV"
 
               # 4. 이전 컨테이너 제거
               echo "🧹 Cleaning up old container named $CONTAINER_NAME..."
@@ -209,26 +207,23 @@ jobs:
                 docker rm -f "$EXISTING_CONTAINER"
               fi
 
-
               # 5. Docker 이미지 pull
               echo "📦 Pulling Docker image luckyprice1103/onthetop-backend:$VERSION"
               docker pull luckyprice1103/onthetop-backend:$VERSION
 
-              #6. Docker 이미지 실행
-
+              # 6. Docker 이미지 실행
               echo "🚀 Running backend Docker container on port $PORT..."
-             docker run -d \
-            --name "$CONTAINER_NAME" \
-            -p "$PORT":8080 \
-            --memory=512m \
-            --cpus=0.5 \
-            -v /home/ubuntu/backend/secrets.properties:/app/secrets.properties \
-            -v /var/log/onthetop/backend:/logs \
-            -e SPRING_PROFILES_ACTIVE="$ENV" \
-            luckyprice1103/onthetop-backend:$VERSION \
-            --logging.file.path=/logs/backend.log \
-            --spring.config.additional-location=file:/app/secrets.properties
-
+              docker run -d \
+                --name "$CONTAINER_NAME" \
+                -p "$PORT":8080 \
+                --memory=512m \
+                --cpus=0.5 \
+                -v /home/ubuntu/backend/secrets.properties:/app/secrets.properties \
+                -v /var/log/onthetop/backend:/logs \
+                -e SPRING_PROFILES_ACTIVE="$ENV" \
+                luckyprice1103/onthetop-backend:$VERSION \
+                --logging.file.path=/logs/backend.log \
+                --spring.config.additional-location=file:/app/secrets.properties
 
               echo "✅ Backend container is running on port $PORT"
           EOF

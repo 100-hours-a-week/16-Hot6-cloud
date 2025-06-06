@@ -162,18 +162,17 @@ jobs:
           BE_PORT: ${{ steps.vars.outputs.be_port }}
         run: |
           echo "▶️ Deploying backend $BE_VERSION on slot $BE_SLOT (port $BE_PORT)..."
-          ssh backend-server 'bash -s' <<EOF
+          ssh backend-server BE_VERSION=$BE_VERSION BE_SLOT=$BE_SLOT BE_PORT=$BE_PORT bash -s <<EOF
               set -e
 
               # 0. 필수 패키지 설치
               sudo apt update && sudo apt install -y docker.io jq gettext
-              METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
 
-              VERSION="${BE_VERSION}"
-              PORT="${BE_PORT}"
-              SLOT="${BE_SLOT}"
+              VERSION="$BE_VERSION"
+              SLOT="$BE_SLOT"
+              PORT="$BE_PORT"
               ENV="prod"
-              CONTAINER_NAME="onthetop-backend-\$SLOT"
+              CONTAINER_NAME="onthetop-backend-$SLOT"
               
 
               echo "✅ [DRY RUN] Version: \$VERSION"

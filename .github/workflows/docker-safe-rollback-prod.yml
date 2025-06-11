@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       be_version:
-        description: '현재 잘못 배포된 docker 배포 버전 (예: 1.2.3)'
+        description: '현재 잘못 배포된 docker 배포 버전 (예: v1.2.3)'
         required: true
       fe_slot:
         description: '현재 잘못 배포된 FE 슬롯 (예: blue, green)'
@@ -94,7 +94,7 @@ jobs:
       - name: Rollback Backend with MIG Health Check
         env:
           SLOT_IPS: ${{ steps.get_ips.outputs.slot_ips }}
-          BE_VERSION: ${{ steps.vars.outputs.be_version }}
+          CANCEL_VERSION: ${{ github.event.inputs.be_version }}
           JUMP_HOST: ${{ secrets.JUMP_SSH_HOST }}
         run: |
           mkdir -p ~/.ssh
@@ -110,7 +110,7 @@ jobs:
             ssh -o StrictHostKeyChecking=no \
                 -o UserKnownHostsFile=/dev/null \
                 -o ProxyCommand="ssh -i ~/.ssh/jump_key -W %h:%p ubuntu@$JUMP_HOST" -i ~/.ssh/dev_key ubuntu@$IP \
-                BE_VERSION=$BE_VERSION bash -s <<'EOF'
+                CANCEL_VERSION=$CANCEL_VERSION bash -s <<'EOF'
                 set -ex
 
 
@@ -130,10 +130,7 @@ jobs:
                 BLUE_VERSION=$(sudo docker inspect --format='{{index .Config.Image}}' "$BLUE_CONTAINER" 2>/dev/null | cut -d: -f2 || echo "")
                 GREEN_VERSION=$(sudo docker inspect --format='{{index .Config.Image}}' "$GREEN_CONTAINER" 2>/dev/null | cut -d: -f2 || echo "")
 
-            
-                if [ "$BLUE_VERSION" = "$CONFIRM_VERSION" ] && [ "$GREEN_VERSION" = "$CONFIRM_VERSION" ]; then
-                echo "두 슬롯이 모두 version=$CONFIRM_VERSION 입니다."
-                fi
+          
 
                 ACTIVE_PORT=$(grep "proxy_pass" /etc/nginx/sites-enabled/backend | grep -oE '[0-9]+')
                 if [ "$ACTIVE_PORT" = "8080" ]; then
@@ -146,7 +143,21 @@ jobs:
                     OLD_PORT=8080
                 fi
 
+                # 🔐 현재 Nginx가 바라보는 슬롯의 버전이 CANCEL_VERSION과 일치하는지 확인
+                ACTIVE_VERSION=$(sudo docker inspect --format='{{index .Config.Image}}' onthetop-backend-$ACTIVE_SLOT 2>/dev/null | cut -d: -f2 || echo "")
+                if [ "$ACTIVE_VERSION" != "$CANCEL_VERSION" ]; then
+                  echo "❌ 현재 Nginx가 바라보는 슬롯($ACTIVE_SLOT)의 버전은 $ACTIVE_VERSION 입니다."
+                  echo "⚠️ 입력한 CANCEL_VERSION ($CANCEL_VERSION)과 일치하지 않습니다. 롤백 중단."
+                  exit 1
+                fi
 
+
+                OLD_VERSION=$(sudo docker inspect --format='{{index .Config.Image}}' onthetop-backend-$OLD_SLOT 2>/dev/null | cut -d: -f2 || echo "")
+                if [ "$OLD_VERSION" = "$CANCEL_VERSION" ]; then
+                  echo "❌ 롤백 대상 슬롯이 문제 버전($CANCEL_VERSION)과 동일합니다. 롤백 불가."
+                  exit 1
+                fi
+                
                 echo " 현재 슬롯: $ACTIVE_SLOT → 롤백 슬롯: $OLD_SLOT (포트: $OLD_PORT)"
 
                 # ✅ Health check
@@ -167,7 +178,7 @@ jobs:
                 fi
 
                 # 🔁 Nginx 설정 변경
-                echo "🔁 Switching Nginx to $NEW_SLOT (port $OLD_PORT)..."
+                echo "🔁 Switching Nginx to $OLD_SLOT (port $OLD_PORT)..."
                 NGINX_CONF="/etc/nginx/sites-enabled/backend"
 
                 echo "server {
@@ -181,10 +192,22 @@ jobs:
                   }
                 }" | sudo tee "$NGINX_CONF" > /dev/null
 
-                echo "✅ Nginx config updated to route to port $PORT"
+                echo "✅ Nginx config updated to route to port $OLD_PORT"
                 echo "🔄 Reloading Nginx..."
                 sudo nginx -t
                 sudo systemctl reload nginx
+
+                ROLLBACK_LOG="/var/log/rollback.log"
+                TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
+
+
+                echo "[$TIMESTAMP] [$INSTANCE_NAME] 롤백 결과" | sudo tee -a $ROLLBACK_LOG > /dev/null
+                echo "  🔵 BLUE 버전  : $BLUE_VERSION" | sudo tee -a $ROLLBACK_LOG > /dev/null
+                echo "  🟢 GREEN 버전 : $GREEN_VERSION" | sudo tee -a $ROLLBACK_LOG > /dev/null
+                echo "  🎯 ACTIVE SLOT: $ACTIVE_SLOT (버전: $ACTIVE_VERSION)" | sudo tee -a $ROLLBACK_LOG > /dev/null
+                echo "  🔁 ROLLBACK →  $OLD_SLOT (버전: $OLD_VERSION, 포트: $OLD_PORT)" | sudo tee -a $ROLLBACK_LOG > /dev/null
+                echo "  ✅ Health Check: 통과" | sudo tee -a $ROLLBACK_LOG > /dev/null
+                echo "" | sudo tee -a $ROLLBACK_LOG > /dev/null
           EOF
           done
 

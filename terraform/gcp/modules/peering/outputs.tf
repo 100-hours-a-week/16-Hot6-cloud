@@ -1,2 +1,0 @@
-# peering module outputs.tf
-

@@ -39,13 +39,13 @@ groups:
           description: "Instance {{ $labels.instance }}의 메모리 사용량이 90%를 초과했습니다. (1분 이상 유지)"
 
       - alert: HighDiskUsage
-        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 90
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 80
         for: 1h
         labels:
           severity: warning
         annotations:
-          summary: "디스크 사용량이 90% 이상 유지됨"
-          description: "Instance {{ $labels.instance }}의 디스크 사용량이 90%를 초과했습니다. (1시간 이상 유지)"
+          summary: "디스크 사용량이 80% 이상 유지됨"
+          description: "Instance {{ $labels.instance }}의 디스크 사용량이 80%를 초과했습니다. (1시간 이상 유지)"
 
       - alert: PrometheusTargetMissing
         expr: up == 0

@@ -10,6 +10,11 @@ resource "google_compute_instance_template" "this" {
     boot         = true
   }
 
+  service_account {
+    email  = var.service_account.email
+    scopes = var.service_account.scopes
+  }
+
   network_interface {
     subnetwork         = var.subnetwork
   }

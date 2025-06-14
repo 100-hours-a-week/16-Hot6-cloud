@@ -91,6 +91,10 @@ module "backend_template" {
   image          = var.backend_image
   subnetwork     = module.subnet_private.self_link
   startup_script_path = "../../../../scripts/cicd/docker-startup-script.sh"
+  service_account = {
+    email  = "onthetop-sa-secret-manager@onlinevoting-378808.iam.gserviceaccount.com"
+    scopes = ["cloud-platform"]
+    }
   tags = [
     for name in ["ssh", "http", "https", "monitoring", "backend"] : local.firewall_expanded_rules[name].tag
   ]
@@ -101,7 +105,7 @@ module "backend_health_check" {
   name        = "backend-health-check"
   project_id  = var.project_id
   protocol    = "HTTP"
-  port        = 8080
+  port        = 80
   request_path = "/api/v1/health"
 }
 
@@ -113,7 +117,7 @@ module "backend_mig" {
   instance_template  = module.backend_template.template_self_link
   target_size        = 1
   named_port         = "http"
-  port               = 8080
+  port               = 80
   health_check       = module.backend_health_check.self_link # 없으면 null
   update_policy = {
     type                   = "PROACTIVE"

@@ -25,7 +25,7 @@ locals {
     http = {
       name          = "http"
       port          = ["80"]
-      source_ranges = ["10.0.0.0/8"]
+      source_ranges = ["10.0.0.0/8", "130.211.0.0/22", "35.191.0.0/16"]
       tag_suffix    = "http"
     },
     https = {

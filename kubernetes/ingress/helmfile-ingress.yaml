@@ -1,0 +1,38 @@
+# helmfile-ingress.yaml
+
+releases:
+  - name: ingress-nginx
+    namespace: ingress-nginx
+    createNamespace: true
+    chart: ingress-nginx/ingress-nginx
+    version: 4.10.0
+    values:
+      - controller:
+          ingressClassResource:
+            name: nginx
+            enabled: true
+            default: false
+          replicaCount: 1
+          nodeSelector:
+            role: ingress
+          tolerations:
+            - key: "ingress"
+              operator: "Equal"
+              value: "nginx"
+              effect: "NoSchedule"
+          service:
+            type: NodePort
+            nodePorts:
+              http: 30494
+              https: 30199
+          admissionWebhooks:
+            enabled: false
+            # patch:
+            #   enabled: true
+            # port: 8443
+            # service:
+            #   create: true
+            #   name: ingress-nginx-admission
+            #   namespace: ingress-nginx
+            #   path: /validate
+            # name: ingress-nginx-admission

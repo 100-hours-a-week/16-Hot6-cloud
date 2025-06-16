@@ -1,46 +1,42 @@
 #!/bin/bash
 set -e
 
-# 기본 설정
+### ⛔ 스왑 끄기
 swapoff -a
 sed -i '/ swap / s/^/#/' /etc/fstab
 
-# 필수 패키지
+### 📦 패키지 설치
 apt-get update && apt-get install -y \
-  curl apt-transport-https gnupg2 software-properties-common git golang
+  curl apt-transport-https gnupg2 software-properties-common containerd
 
-# containerd 설치
-apt-get install -y containerd
-# containerd 설정 파일 생성 (CRI plugin 포함)
+### 🔧 containerd 설정
 mkdir -p /etc/containerd
 containerd config default > /etc/containerd/config.toml
-# CRI plugin이 비활성화된 경우를 대비해 disabled_plugins 제거
 sed -i '/disabled_plugins/d' /etc/containerd/config.toml
-# containerd 재시작
+sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
 systemctl restart containerd
 systemctl enable containerd
 
-# Kubernetes 저장소 설정
+### 🔧 sysctl 설정
+modprobe br_netfilter
+cat <<EOF > /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+
+### 📦 Kubernetes 바이너리 설치
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | \
   gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
-  https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | \
+https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | \
   tee /etc/apt/sources.list.d/kubernetes.list
-
-# Kubernetes 구성 요소 설치
 apt-get update
 apt-get install -y kubelet kubeadm kubectl
 apt-mark hold kubelet kubeadm kubectl
 
-# Calico CNI를 위한 sysctl 설정
-modprobe br_netfilter
-echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
-
-echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-sysctl -w net.ipv4.ip_forward=1
-
-# 클러스터 참여 (재시도 로직 포함)
+### ✅ 마스터에서 생성한 join.sh 실행
 JOIN_URL="http://${master_ip}:${nginx_port}/join.sh"
 for i in {1..30}; do
   echo "[Worker] Attempting to join cluster... (try $i)"
@@ -59,3 +55,6 @@ for i in {1..30}; do
 
   sleep 10
 done
+
+### kubelet 서비스 항상 활성화
+systemctl enable kubelet && systemctl start kubelet

@@ -1,67 +1,62 @@
 #!/bin/bash
 set -e
 
-# 기본 설정
+### ⛔ 시스템 기본 설정
 swapoff -a
 sed -i '/ swap / s/^/#/' /etc/fstab
 
-# 패키지 설치
+### 📦 필수 패키지 설치
 apt-get update && apt-get install -y \
-  curl apt-transport-https gnupg2 software-properties-common nginx golang
+    curl apt-transport-https gnupg2 software-properties-common nginx containerd
 
-# containerd 설치
-apt-get install -y containerd
-# containerd 설정 파일 생성 (CRI plugin 포함)
+### 🔧 containerd 설정
 mkdir -p /etc/containerd
 containerd config default > /etc/containerd/config.toml
-# CRI plugin이 비활성화된 경우를 대비해 disabled_plugins 제거
 sed -i '/disabled_plugins/d' /etc/containerd/config.toml
-# cgroup 드라이버 설정 (systemd로 일치시킴)
 sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
-# containerd 재시작
 systemctl restart containerd
 systemctl enable containerd
 
-# Kubernetes 저장소 설정
+### 🔧 sysctl 설정
+modprobe br_netfilter
+cat <<EOF > /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-iptables = 1
+net.ipv4.ip_forward = 1
+EOF
+sysctl --system
+
+### 📦 kubeadm 설치
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key | \
-  gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] \
-  https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | \
-  tee /etc/apt/sources.list.d/kubernetes.list
-
-# Kubernetes 구성 요소 설치
+https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | \
+    tee /etc/apt/sources.list.d/kubernetes.list
 apt-get update
 apt-get install -y kubelet kubeadm kubectl
 apt-mark hold kubelet kubeadm kubectl
 
-# Calico CNI 위한 sysctl 설정
-modprobe br_netfilter
-echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
-
-echo 'net.ipv4.ip_forward=1' >> /etc/sysctl.conf
-sysctl -w net.ipv4.ip_forward=1
-
-# kubeadm 초기화
+### 🏗 kubeadm init
 kubeadm init \
   --pod-network-cidr=10.244.0.0/16 \
   --apiserver-advertise-address=$(hostname -i) \
   --cri-socket=unix:///var/run/containerd/containerd.sock
 
-# kubeconfig 복사
+### 🔐 kubeconfig 설정 (ubuntu 사용자 기준)
 mkdir -p /home/ubuntu/.kube
 cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
-chown -R ubuntu:ubuntu /home/ubuntu/.kube
+chown ubuntu:ubuntu /home/ubuntu/.kube/config
 
-# Calico CNI 적용
-su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/calico.yaml"
+### 🌐 Flannel CNI 적용
+su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml"
 
-# Nginx 포트 설정
+### 🌐 nginx 설정 (포트 18080으로 join.sh 배포)
 sed -i "s/listen 80 default_server;/listen ${nginx_port};/" /etc/nginx/sites-available/default
 sed -i "s|root /var/www/html;|root /var/www/html;|" /etc/nginx/sites-available/default
 systemctl restart nginx
+systemctl enable nginx
 
-# join 명령 노출용 스크립트 생성
+### 🔁 토큰 생성 및 join.sh 배포 스크립트
 cat > /usr/local/bin/rotate-token.sh <<EOF
 #!/bin/bash
 set -e
@@ -79,5 +74,5 @@ EOF
 chmod +x /usr/local/bin/rotate-token.sh
 /usr/local/bin/rotate-token.sh
 
-# crontab에 등록 (매 30분마다 재생성)
+### 🕒 crontab 등록 (30분마다 rotate)
 echo "*/30 * * * * root /usr/local/bin/rotate-token.sh" > /etc/cron.d/kubeadm-token-rotate

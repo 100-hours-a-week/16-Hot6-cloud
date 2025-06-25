@@ -47,8 +47,9 @@ mkdir -p /home/ubuntu/.kube
 cp /etc/kubernetes/admin.conf /home/ubuntu/.kube/config
 chown ubuntu:ubuntu /home/ubuntu/.kube/config
 
-### 🌐 Flannel CNI 적용
-su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml"
+### 🌐 Calico CNI 적용
+# su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml"
+su - ubuntu -c "kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.30.2/manifests/calico.yaml"
 
 ### 🌐 nginx 설정 (포트 18080으로 join.sh 배포)
 sed -i "s/listen 80 default_server;/listen ${nginx_port};/" /etc/nginx/sites-available/default

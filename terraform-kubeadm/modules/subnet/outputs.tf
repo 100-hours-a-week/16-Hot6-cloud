@@ -1,4 +1,4 @@
-# vpc module outputs.tf
+# subnet module outputs.tf
 
 output "subnet_id" {
   value = aws_subnet.this.id

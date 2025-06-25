@@ -1,4 +1,4 @@
-# vpc module main.tf
+# NAT module main.tf
 
 resource "aws_eip" "this" {
   domain = "vpc"

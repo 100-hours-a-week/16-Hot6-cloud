@@ -101,7 +101,7 @@ module "backend_health_check" {
   name        = "backend-health-check"
   project_id  = var.project_id
   protocol    = "HTTP"
-  port        = 8080
+  port        = 80
   request_path = "/api/v1/health"
 }
 
@@ -113,7 +113,7 @@ module "backend_mig" {
   instance_template  = module.backend_template.template_self_link
   target_size        = 1
   named_port         = "http"
-  port               = 8080
+  port               = 80
   health_check       = module.backend_health_check.self_link # 없으면 null
   update_policy = {
     type                   = "PROACTIVE"

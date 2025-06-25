@@ -8,6 +8,13 @@ resource "aws_launch_template" "this" {
 
   user_data = var.user_data != null ? base64encode(var.user_data) : null
 
+  dynamic "iam_instance_profile" {
+    for_each = var.iam_instance_profile != null ? [var.iam_instance_profile] : []
+    content {
+      name = iam_instance_profile.value
+    }
+  }
+
   dynamic "instance_market_options" {
     for_each = var.use_spot ? [1] : []
     content {
@@ -20,7 +27,7 @@ resource "aws_launch_template" "this" {
   }
 
   network_interfaces {
-    associate_public_ip_address = true
+    associate_public_ip_address = var.associate_public_ip
     subnet_id                   = var.subnet_id
     security_groups             = var.security_group_ids
   }

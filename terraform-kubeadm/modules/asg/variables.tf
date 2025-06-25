@@ -47,3 +47,14 @@ variable "user_data" {
   default     = null
   nullable    = true
 }
+
+variable "associate_public_ip" {
+  type    = bool
+  default = false
+}
+
+variable "iam_instance_profile" {
+  description = "IAM instance profile name to attach to the instances"
+  type        = string
+  default     = null
+}

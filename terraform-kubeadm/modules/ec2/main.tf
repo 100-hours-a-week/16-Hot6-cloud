@@ -48,9 +48,11 @@ resource "aws_instance" "this" {
     }
   }
 
+  iam_instance_profile = var.iam_instance_profile
+
   source_dest_check = var.source_dest_check
 
-  tags = {
+  tags = merge(var.tags, {
     Name = var.name
-  }
+  })
 }

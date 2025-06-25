@@ -1,4 +1,4 @@
-# vpc module variables.tf
+# subnet module variables.tf
 
 variable "name" {
   type        = string
@@ -29,5 +29,16 @@ variable "public" {
 variable "igw_id" {
   type        = string
   description = "Internet Gateway ID"
+  default     = ""
+}
+
+variable "nat_gateway_id" {
+  type    = string
+  default = ""
+}
+
+variable "cluster_name" {
+  description = "Kubernetes cluster name used for tagging"
+  type        = string
   default     = ""
 }

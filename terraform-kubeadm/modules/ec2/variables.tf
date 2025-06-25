@@ -66,3 +66,8 @@ variable "source_dest_check" {
   type    = bool
   default = true
 }
+
+variable "iam_instance_profile" {
+  type    = string
+  default = null
+}

@@ -1,4 +1,4 @@
-# vpc module variables.tf
+# NAT module variables.tf
 
 variable "name" {
   type        = string

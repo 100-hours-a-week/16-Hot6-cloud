@@ -1,4 +1,4 @@
-# vpc module main.tf
+# subnet module main.tf
 
 resource "aws_subnet" "this" {
   vpc_id                  = var.vpc_id
@@ -7,7 +7,9 @@ resource "aws_subnet" "this" {
   map_public_ip_on_launch = var.public
 
   tags = {
-    Name = var.name
+    Name                                     = var.name
+    "kubernetes.io/cluster/${var.cluster_name}" = "owned"
+    "kubernetes.io/role/elb"                 = "1"
   }
 }
 
@@ -16,6 +18,14 @@ resource "aws_route_table" "this" {
 
   tags = {
     Name = "${var.name}-rt"
+  }
+
+  dynamic "route" {
+    for_each = var.public ? [] : (var.nat_gateway_id == "" ? [] : [var.nat_gateway_id])
+    content {
+      cidr_block     = "0.0.0.0/0"
+      nat_gateway_id = route.value
+    }
   }
 }
 

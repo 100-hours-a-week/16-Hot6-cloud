@@ -1,0 +1,31 @@
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: onthetop-backend-app
+          labels:
+            app: onthetop-backend-app
+        spec:
+          replicas: 2 # 2개의 파드 복제본을 실행합니다.
+          selector:
+            matchLabels:
+              app: onthetop-backend-app
+          template:
+            metadata:
+              labels:
+                app: onthetop-backend-app
+            spec:
+              containers:
+              - name: backend-container
+                image: luckyprice1103/onthetop-backend:v2.0.3 # Docker Hub 이미지 경로 및 버전
+                ports:
+                - containerPort: 8080 # 백엔드 애플리케이션이 리스닝하는 포트
+                env: # (선택 사항) 환경 변수 예시
+                - name: SPRING_DATASOURCE_URL
+                  value: "jdbc:postgresql://your-db-host:5432/your-db-name"
+                - name: SPRING_DATASOURCE_USERNAME
+                  value: "your-db-user"
+                - name: SPRING_DATASOURCE_PASSWORD
+                  value: "your-db-password"
+              imagePullSecrets: # (선택 사항) Docker Hub 이미지가 private인 경우 필요
+              - name: dockerhub-cred # 아래에서 생성할 Kubernetes Secret 이름
+        

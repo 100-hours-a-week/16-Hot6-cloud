@@ -1,29 +1,33 @@
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: onthetop-backend-app
-          labels:
-            app: onthetop-backend-app
-        spec:
-          replicas: 2 # 2개의 파드 복제본을 실행합니다.
-          selector:
-            matchLabels:
-              app: onthetop-backend-app
-          template:
-            metadata:
-              labels:
-                app: onthetop-backend-app
-            spec:
-              containers:
-              - name: backend-container
-                image: luckyprice1103/onthetop-backend:v2.0.3 # Docker Hub 이미지 경로 및 버전
-                ports:
-                - containerPort: 8080 # 백엔드 애플리케이션이 리스닝하는 포트
-                env: # (선택 사항) 환경 변수 예시
-                - name: SPRING_DATASOURCE_URL
-                  value: "jdbc:postgresql://your-db-host:5432/your-db-name"
-                - name: SPRING_DATASOURCE_USERNAME
-                  value: "your-db-user"
-                - name: SPRING_DATASOURCE_PASSWORD
-                  value: "your-db-password"
-        
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onthetop-backend-app
+  labels:
+    app: onthetop-backend-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: onthetop-backend-app
+  template:
+    metadata:
+      labels:
+        app: onthetop-backend-app
+    spec:
+      containers:
+      - name: backend-container
+        image: luckyprice1103/onthetop-backend:v2.0.3 # Docker Hub 이미지 경로 및 버전
+        ports:
+        - containerPort: 8080 # 백엔드 애플리케이션이 리스닝하는 포트
+        env:
+        # 실제 DB 연결이 없으므로 임시 값을 사용합니다.
+        - name: SPRING_DATASOURCE_URL
+          # MySQL용 JDBC URL 형식으로 변경했습니다.
+          value: "jdbc:mysql://mysql-placeholder:3306/db_placeholder"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "user_placeholder"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "pw_placeholder"
+        # JPA/Hibernate가 DB에 맞춰 동작하도록 Dialect를 지정해주는 것이 좋습니다.
+        - name: SPRING_JPA_DATABASE-PLATFORM
+          value: "org.hibernate.dialect.MySQLDialect"

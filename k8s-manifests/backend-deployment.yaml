@@ -16,9 +16,9 @@ spec:
     spec:
       containers:
       - name: backend-container
-        image: luckyprice1103/onthetop-backend:v2.0.3 # Docker Hub 이미지 경로 및 버전
+        image: luckyprice1103/onthetop-backend:v2.0.3
         ports:
-        - containerPort: 8080 # 백엔드 애플리케이션이 리스닝하는 포트
+        - containerPort: 8080
         env:
         - name: SPRING_AUTOCONFIGURE_EXCLUDE
           value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"

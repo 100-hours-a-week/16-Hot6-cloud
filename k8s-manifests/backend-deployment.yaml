@@ -26,6 +26,4 @@
                   value: "your-db-user"
                 - name: SPRING_DATASOURCE_PASSWORD
                   value: "your-db-password"
-              imagePullSecrets: # (선택 사항) Docker Hub 이미지가 private인 경우 필요
-              - name: dockerhub-cred # 아래에서 생성할 Kubernetes Secret 이름
         

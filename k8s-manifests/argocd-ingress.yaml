@@ -15,9 +15,12 @@ metadata:
     
     # --- 헬스 체크 및 백엔드 프로토콜 설정 수정 ---
     # ALB가 ArgoCD 서버와 HTTP로 통신하도록 변경합니다.
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTPS
     alb.ingress.kubernetes.io/success-codes: '200,307'
 spec:
+  ingressClassName: alb
   rules:
     - host: argocd.onthe-top.com
       http:

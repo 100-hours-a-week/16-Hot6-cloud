@@ -1,39 +1,37 @@
-# eks-terraform/kubernetes_manifests/backend-ingress.yaml
+# argocd-ingress.yaml
 
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: onthetop-backend-ingress
-  # 이 어노테이션들이 AWS Load Balancer Controller에게 일을 시키는 부분입니다.
+  # 1. 이 Ingress는 ArgoCD와 같은 네임스페이스에 배포되어야 합니다.
+  name: argocd-ingress
+  namespace: argocd
   annotations:
+    # --- 필수 설정: 담당 Ingress Controller 지정 ---
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+
+    # --- 권장 설정: HTTPS 리디렉션 및 인증서 ---
+    # HTTP(80)와 HTTPS(443) 포트를 모두 사용하도록 설정
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    # HTTP로 들어온 모든 요청을 HTTPS로 리디렉션
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+    # ⚠️ 아래 ARN을 실제 AWS ACM에서 발급받은 SSL 인증서의 ARN으로 반드시 교체하세요.
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:123456789012:certificate/your-cert-id
+
 spec:
   rules:
-    # 1. ArgoCD 접속 규칙
-    - host: argocd.onthe-top.com  # ⚠️ ArgoCD에 사용할 실제 도메인으로 변경
+    # --- ArgoCD 접속 규칙 ---
+    - host: argocd.onthe-top.com # ⚠️ ArgoCD에 사용할 실제 도메인으로 변경
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: argocd-server # ArgoCD 서비스 이름
+                # Ingress와 같은 'argocd' 네임스페이스에 있으므로 이름만으로 찾을 수 있습니다.
+                name: argocd-server
                 port:
-                  number: 80 # argocd-server가 노출하는 HTTP 포트
-
-    # 2. 백엔드 서비스 접속 규칙
-    - host: api.your-domain.com  # ⚠️ 백엔드 서비스에 사용할 실제 도메인으로 변경
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                # 🚨 백엔드 서비스는 다른 네임스페이스에 있으므로,
-                # '네임스페이스이름.서비스이름' 형태로 접근해야 할 수 있습니다.
-                # 여기서는 'default' 네임스페이스에 있다고 가정합니다.
-                name: onthetop-backend-service # 백엔드 서비스 이름
-                port:
-                  number: 80 # onthetop-backend-service가 노출하는 포트
+                  # argocd-server 서비스가 노출하는 HTTP 포트
+                  number: 80

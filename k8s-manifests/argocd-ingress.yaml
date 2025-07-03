@@ -33,3 +33,11 @@ spec:
                 port:
                   # backend-protocol이 HTTP이므로, HTTP 포트(80)를 사용합니다.
                   number: 443
+
+ # ⬇️ 이 부분을 추가합니다.
+  syncPolicy:
+    automated:
+      # prune: Git에서 삭제된 리소스를 클러스터에서도 자동으로 삭제합니다.
+      prune: true
+      # selfHeal: 클러스터의 상태가 Git과 다를 경우, 자동으로 Git의 상태로 복구합니다.
+      selfHeal: true

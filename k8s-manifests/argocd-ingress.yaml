@@ -1,24 +1,26 @@
+# argocd-ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: argocd-ingress
   namespace: argocd
   annotations:
-    kubernetes.io/ingress.class: alb
+    # --- 필수 설정 ---
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    
+    # --- 로드밸런서 통합을 위한 그룹 이름 ---
+    alb.ingress.kubernetes.io/group.name: onthetop-services
 
-    # --- HTTPS 리디렉션 및 인증서 설정 ---
+    # --- HTTPS 및 헬스 체크 최종 설정 ---
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:514883192355:certificate/f3093065-c635-4a0c-882e-416f5a4dea97
-    
-    # --- 헬스 체크 및 백엔드 프로토콜 설정 수정 ---
-    # ALB가 ArgoCD 서버와 HTTP로 통신하도록 변경합니다.
-    alb.ingress.kubernetes.io/backend-protocol: HTTP
-    # ArgoCD 서버의 헬스 체크 경로를 명시적으로 지정합니다.
+    alb.ingress.kubernetes.io/backend-protocol: HTTPS
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTPS
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
 spec:
+  ingressClassName: alb
   rules:
     - host: argocd.onthe-top.com
       http:
@@ -29,5 +31,4 @@ spec:
               service:
                 name: argocd-server
                 port:
-                  # backend-protocol이 HTTP이므로, HTTP 포트(80)를 사용합니다.
-                  number: 80
+                  number: 443

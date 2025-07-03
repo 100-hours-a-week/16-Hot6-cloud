@@ -29,4 +29,4 @@ spec:
                 name: argocd-server
                 port:
                   # backend-protocol이 HTTP이므로, HTTP 포트(80)를 사용합니다.
-                  number: 80
+                  number: 443

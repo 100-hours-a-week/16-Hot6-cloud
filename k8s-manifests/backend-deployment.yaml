@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: onthetop-backend-app
+  name: onthetop-backend-deployment
   labels:
     app: onthetop-backend-app
 spec:

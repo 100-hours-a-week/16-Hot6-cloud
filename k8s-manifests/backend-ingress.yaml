@@ -11,16 +11,29 @@ metadata:
     alb.ingress.kubernetes.io/target-type: ip
 spec:
   rules:
-    # 특정 도메인(예: my-backend.example.com)으로 들어오는 요청에 대한 규칙
-    # - host: my-backend.example.com
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            # 트래픽을 전달할 목적지 서비스의 이름
-            name: onthetop-backend-service
-            port:
-              # 해당 서비스가 노출하는 포트
-              number: 80
+    # 1. ArgoCD 접속 규칙
+    - host: argocd.onthe-top.com  # ⚠️ ArgoCD에 사용할 실제 도메인으로 변경
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server # ArgoCD 서비스 이름
+                port:
+                  number: 80 # argocd-server가 노출하는 HTTP 포트
+
+    # 2. 백엔드 서비스 접속 규칙
+    - host: api.your-domain.com  # ⚠️ 백엔드 서비스에 사용할 실제 도메인으로 변경
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # 🚨 백엔드 서비스는 다른 네임스페이스에 있으므로,
+                # '네임스페이스이름.서비스이름' 형태로 접근해야 할 수 있습니다.
+                # 여기서는 'default' 네임스페이스에 있다고 가정합니다.
+                name: onthetop-backend-service # 백엔드 서비스 이름
+                port:
+                  number: 80 # onthetop-backend-service가 노출하는 포트

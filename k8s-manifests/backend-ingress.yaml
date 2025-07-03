@@ -1,0 +1,26 @@
+# eks-terraform/kubernetes_manifests/backend-ingress.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: onthetop-backend-ingress
+  # 이 어노테이션들이 AWS Load Balancer Controller에게 일을 시키는 부분입니다.
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  rules:
+    # 특정 도메인(예: my-backend.example.com)으로 들어오는 요청에 대한 규칙
+    # - host: my-backend.example.com
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            # 트래픽을 전달할 목적지 서비스의 이름
+            name: onthetop-backend-service
+            port:
+              # 해당 서비스가 노출하는 포트
+              number: 80

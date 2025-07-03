@@ -1,43 +1,43 @@
-# backend-ingress.yaml
+# # backend-ingress.yaml
 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  # 1. 이 Ingress는 백엔드 서비스와 같은 네임스페이스에 배포되어야 합니다.
-  name: onthetop-backend-ingress
-  namespace: onthetop-backend # ⚠️ 백엔드 서비스가 있는 네임스페이스로 변경하세요.
-  annotations:
-    # --- 필수 설정 ---
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   # 1. 이 Ingress는 백엔드 서비스와 같은 네임스페이스에 배포되어야 합니다.
+#   name: onthetop-backend-ingress
+#   namespace: onthetop-backend # ⚠️ 백엔드 서비스가 있는 네임스페이스로 변경하세요.
+#   annotations:
+#     # --- 필수 설정 ---
+#     alb.ingress.kubernetes.io/scheme: internet-facing
+#     alb.ingress.kubernetes.io/target-type: ip
     
-    # --- 로드밸런서 통합을 위한 그룹 이름 ---
-    # ArgoCD Ingress와 동일한 그룹 이름을 사용합니다.
-    alb.ingress.kubernetes.io/group.name: onthetop-services
+#     # --- 로드밸런서 통합을 위한 그룹 이름 ---
+#     # ArgoCD Ingress와 동일한 그룹 이름을 사용합니다.
+#     alb.ingress.kubernetes.io/group.name: onthetop-services
 
-    # --- HTTPS 및 인증서 설정 ---
-    # HTTP(80)와 HTTPS(443) 포트를 모두 사용하도록 설정
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
-    # HTTP로 들어온 모든 요청을 HTTPS로 리디렉션
-    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
-    # ⚠️ ArgoCD Ingress와 동일한 ACM 인증서 ARN을 사용합니다.
-    # 이 인증서는 'backend.onthe-top.com'도 포함하는 와일드카드(*.onthe-top.com) 인증서여야 합니다.
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:514883192355:certificate/f3093065-c635-4a0c-882e-416f5a4dea97
+#     # --- HTTPS 및 인증서 설정 ---
+#     # HTTP(80)와 HTTPS(443) 포트를 모두 사용하도록 설정
+#     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+#     # HTTP로 들어온 모든 요청을 HTTPS로 리디렉션
+#     alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+#     # ⚠️ ArgoCD Ingress와 동일한 ACM 인증서 ARN을 사용합니다.
+#     # 이 인증서는 'backend.onthe-top.com'도 포함하는 와일드카드(*.onthe-top.com) 인증서여야 합니다.
+#     alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:514883192355:certificate/f3093065-c635-4a0c-882e-416f5a4dea97
     
-spec:
-  # Ingress의 담당자를 'alb'로 명확하게 지정합니다.
-  ingressClassName: alb
-  rules:
-    # --- 백엔드 서비스 접속 규칙 ---
-    - host: backend-eks.onthe-top.com
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                # Ingress와 같은 네임스페이스에 있는 백엔드 서비스의 이름
-                name: onthetop-backend-service
-                port:
-                  # onthetop-backend-service가 노출하는 포트
-                  number: 80
+# spec:
+#   # Ingress의 담당자를 'alb'로 명확하게 지정합니다.
+#   ingressClassName: alb
+#   rules:
+#     # --- 백엔드 서비스 접속 규칙 ---
+#     - host: backend-eks.onthe-top.com
+#       http:
+#         paths:
+#           - path: /
+#             pathType: Prefix
+#             backend:
+#               service:
+#                 # Ingress와 같은 네임스페이스에 있는 백엔드 서비스의 이름
+#                 name: onthetop-backend-service
+#                 port:
+#                   # onthetop-backend-service가 노출하는 포트
+#                   number: 80

@@ -17,13 +17,13 @@ metadata:
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
     # HTTP로 들어온 모든 요청을 HTTPS로 리디렉션
     alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
-    # ⚠️ 아래 ARN을 실제 AWS ACM에서 발급받은 SSL 인증서의 ARN으로 반드시 교체하세요.
-    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:123456789012:certificate/your-cert-id
+    # AWS ACM에서 발급받은 SSL 인증서의 ARN
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:514883192355:certificate/f3093065-c635-4a0c-882e-416f5a4dea97
 
 spec:
   rules:
     # --- ArgoCD 접속 규칙 ---
-    - host: argocd.onthe-top.com # ⚠️ ArgoCD에 사용할 실제 도메인으로 변경
+    - host: argocd.onthe-top.com # ArgoCD에 사용할 실제 도메인
       http:
         paths:
           - path: /

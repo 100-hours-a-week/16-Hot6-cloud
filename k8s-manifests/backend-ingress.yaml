@@ -23,7 +23,7 @@ metadata:
 spec:
   rules:
     # --- ArgoCD 접속 규칙 ---
-    - host: argocd.onthe-top.com # ArgoCD에 사용할 실제 도메인
+    - host: argocd.onthe-top.com # ⚠️ ArgoCD에 사용할 실제 도메인으로 변경
       http:
         paths:
           - path: /
@@ -33,5 +33,4 @@ spec:
                 # Ingress와 같은 'argocd' 네임스페이스에 있으므로 이름만으로 찾을 수 있습니다.
                 name: argocd-server
                 port:
-                  # argocd-server 서비스가 노출하는 HTTP 포트
-                  number: 80
+                  number: 443

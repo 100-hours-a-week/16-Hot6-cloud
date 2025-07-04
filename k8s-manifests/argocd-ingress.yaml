@@ -33,7 +33,7 @@ spec:
                 name: argocd-server
                 port:
                   # backend-protocol이 HTTP이므로, HTTP 포트(80)를 사용합니다.
-                  number: 443
+                  number: 80
 
 #  # ⬇️ 이 부분을 추가합니다.
 #   syncPolicy:

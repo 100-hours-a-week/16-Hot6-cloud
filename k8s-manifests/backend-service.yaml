@@ -1,15 +1,16 @@
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: onthetop-backend-service
-          labels:
-            app: onthetop-backend-app
-        spec:
-          selector:
-            app: onthetop-backend-app
-          ports:
-            - protocol: TCP
-              port: 80 # 서비스가 노출할 포트
-              targetPort: 8080 # 파드 컨테이너의 실제 포트
-          type: ClusterIP # 클러스터 내부에서만 접근 가능 서비스
-        
+# application-gitops-repo/kubernetes/onthetop-backend/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: onthetop-backend-service # 서비스 이름 (Ingress에서 참조)
+  namespace: onthetop-backend # 이 서비스가 배포될 네임스페이스
+  labels:
+    app: onthetop-backend # Deployment의 라벨과 일치
+spec:
+  selector:
+    app: onthetop-backend # Deployment의 Pod를 선택하기 위한 라벨 셀렉터
+  ports:
+    - protocol: TCP
+      port: 80 # 서비스가 노출할 포트 (Ingress가 이 포트로 통신)
+      targetPort: 8080 # 파드 컨테이너의 실제 포트
+  type: ClusterIP # 클러스터 내부에서만 접근 가능한 서비스 타입

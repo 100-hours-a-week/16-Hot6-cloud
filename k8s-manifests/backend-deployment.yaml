@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: onthetop-backend-container
-        image: luckyprice1103/onthetop-backend:v2.0.3
+        image: luckyprice1103/onthetop-backend:v2.0.8
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080
@@ -41,6 +41,7 @@ spec:
               name: onthetop-backend-config
               key: BE_VERSION
 
+        # 데이터 베이스 생기면 다시 만들기.
         - name: SPRING_AUTOCONFIGURE_EXCLUDE
           value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
 

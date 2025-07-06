@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: onthetop-backend-container
-        image: luckyprice1103/onthetop-backend:{{ .Values.image.tag | default "latest" }}
+        image: luckyprice1103/onthetop-backend:v2.0.3
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8080

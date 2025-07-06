@@ -41,10 +41,6 @@ spec:
               name: onthetop-backend-config
               key: BE_VERSION
 
-        - name: SPRING_AUTOCONFIGURE_EXCLUDE
-          value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
-
-
         volumeMounts:
         - name: secrets-properties-volume # 아래 volumes 섹션에서 정의한 볼륨 이름
           mountPath: "/app/secrets.properties" # 컨테이너 내부에서 파일이 마운트될 경로

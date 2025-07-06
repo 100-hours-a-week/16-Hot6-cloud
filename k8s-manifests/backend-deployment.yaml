@@ -5,7 +5,7 @@ metadata:
   labels:
     app: onthetop-backend
 spec:
-  replicas: 4
+  replicas: 2
   selector:
     matchLabels:
       app: onthetop-backend
@@ -40,6 +40,10 @@ spec:
             configMapKeyRef:
               name: onthetop-backend-config
               key: BE_VERSION
+
+        - name: SPRING_AUTOCONFIGURE_EXCLUDE
+          value: "org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration"
+
 
         volumeMounts:
         - name: secrets-properties-volume # 아래 volumes 섹션에서 정의한 볼륨 이름

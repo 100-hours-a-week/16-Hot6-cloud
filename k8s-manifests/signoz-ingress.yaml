@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: signoz-ingress
+  namespace: signoz # ★ 1. 네임스페이스를 signoz로 지정
+  annotations:
+    # --- 기존 Ingress와 동일한 어노테이션을 사용하여 같은 ALB를 공유 ---
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+
+    alb.ingress.kubernetes.io/group.name: onthetop-services # ★ 같은 그룹으로 묶기
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:514883192355:certificate/f3093065-c635-4a0c-882e-416f5a4dea97
+    
+    # SigNoz UI는 HTTP로 통신합니다.
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    # SigNoz UI의 헬스체크 경로는 /api/v1/health 입니다.
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/success-codes: '200'
+spec:
+  ingressClassName: alb
+  rules:
+    - host: eks-signoz.onthe-top.com # ★ 2. SigNoz UI에 사용할 도메인
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: my-signoz-signoz # ★ 3. Helm으로 설치된 SigNoz 서비스 이름
+                port:
+                  number: 8080 # ★ 4. SigNoz 서비스가 노출하는 포트

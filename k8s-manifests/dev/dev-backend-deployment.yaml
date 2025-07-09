@@ -1,0 +1,61 @@
+# dev/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onthetop-backend-app-dev # ★ 1. 이름 변경: dev 접미사 추가
+  namespace: onthetop-backend-dev # ★ 2. 네임스페이스 변경: dev용으로 지정
+  labels:
+    app: onthetop-backend-dev # ★ 3. 라벨 변경: dev용으로 지정
+spec:
+  replicas: 1 # ★ 4. 복제본 수 변경: 개발 환경이므로 1개로 줄임
+  selector:
+    matchLabels:
+      app: onthetop-backend-dev # ★ 3. 라벨 변경: dev용으로 지정
+  template:
+    metadata:
+      labels:
+        app: onthetop-backend-dev # ★ 3. 라벨 변경: dev용으로 지정
+    spec:
+      containers:
+      - name: onthetop-backend-container
+        image: luckyprice1103/onthetop-backend:v2.0.9 # 개발용 이미지가 있다면 변경
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http-app
+        resources:
+          limits: 
+            memory: "256Mi" # ★ 5. 리소스 줄이기: 개발용이므로 메모리 제한 낮춤
+            cpu: "0.25"   # ★ 5. 리소스 줄이기: 개발용이므로 CPU 제한 낮춤
+        env:
+        - name: SPRING_PROFILES_ACTIVE 
+          value: "dev" # ★ 6. 프로파일 변경: dev 프로파일 사용
+        - name: PORT 
+          valueFrom:
+            configMapKeyRef:
+              name: onthetop-backend-config-dev # ★ 7. ConfigMap 변경: dev용 ConfigMap 참조
+              key: PORT
+        - name: BE_VERSION 
+          valueFrom:
+            configMapKeyRef:
+              name: onthetop-backend-config-dev # ★ 7. ConfigMap 변경: dev용 ConfigMap 참조
+              key: BE_VERSION
+
+        volumeMounts:
+        - name: secrets-properties-volume
+          mountPath: "/app/secrets.properties"
+          subPath: "secrets.properties"
+          readOnly: true
+        - name: logs-volume
+          mountPath: "/logs"
+
+        args:
+        - "--logging.file.name=/logs/backend.log"
+        - "--spring.config.additional-location=file:/app/secrets.properties"
+
+      volumes:
+      - name: secrets-properties-volume
+        secret:
+          secretName: onthetop-backend-secrets-dev # ★ 8. Secret 변경: dev용 Secret 참조
+      - name: logs-volume
+        emptyDir: {}

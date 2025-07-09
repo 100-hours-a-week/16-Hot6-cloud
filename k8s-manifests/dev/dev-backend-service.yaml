@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: onthetop-backend-service-dev # ★ 1. 이름 변경: dev 접미사 추가
+  namespace: onthetop-backend-dev   # ★ 2. 네임스페이스 변경: dev용으로 지정
+  labels:
+    app: onthetop-backend-dev       # ★ 3. 라벨 변경: dev용으로 지정
+spec:
+  selector:
+    app: onthetop-backend-dev # ★ 4. 셀렉터 변경: dev Deployment의 Pod를 선택
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: ClusterIP

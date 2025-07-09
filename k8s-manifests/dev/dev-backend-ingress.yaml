@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: onthetop-backend-ingress-dev # ★ 1. 이름 변경
+  namespace: onthetop-backend-dev   # ★ 2. 네임스페이스 변경
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: onthetop-services # ★ 같은 그룹으로 묶어 ALB 공유
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/actions.ssl-redirect: '{"Type": "redirect", "RedirectConfig": { "Protocol": "HTTPS", "Port": "443", "StatusCode": "HTTP_301"}}'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:514883192355:certificate/f3093065-c635-4a0c-882e-416f5a4dea97
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-path: /api/v1/health
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/success-codes: '200,307'
+spec:
+  ingressClassName: alb
+  rules:
+    - host: dev-eks-backend.onthe-top.com # ★ 3. 개발용 도메인으로 변경
+      http:
+        paths:
+          - path: / 
+            pathType: Prefix
+            backend:
+              service:
+                name: onthetop-backend-service-dev # ★ 4. dev Service를 가리키도록 변경
+                port:
+                  number: 80

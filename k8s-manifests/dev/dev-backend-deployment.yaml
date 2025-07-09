@@ -30,7 +30,7 @@ spec:
         env:
         # 1. OTLP 엔드포인트 주소 변경
         - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://signoz-otel-collector.signoz.svc.cluster.local:4317"
+          value: "http://my-signoz-otel-collector.signoz.svc.cluster.local:4317"
 
         # 2. OTLP 프로토콜 설정 (gRPC)
         - name: OTEL_EXPORTER_OTLP_PROTOCOL
@@ -43,7 +43,7 @@ spec:
         # 4. 메트릭스는 여전히 사용 안 함
         - name: OTEL_METRICS_EXPORTER
           value: "none"
-          
+
         - name: SPRING_PROFILES_ACTIVE 
           value: "dev" # ★ 6. 프로파일 변경: dev 프로파일 사용
         - name: PORT 

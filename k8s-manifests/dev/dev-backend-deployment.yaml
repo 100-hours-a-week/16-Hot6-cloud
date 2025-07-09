@@ -25,8 +25,8 @@ spec:
           name: http-app
         resources:
           limits: 
-            memory: "256Mi" # ★ 5. 리소스 줄이기: 개발용이므로 메모리 제한 낮춤
-            cpu: "0.25"   # ★ 5. 리소스 줄이기: 개발용이므로 CPU 제한 낮춤
+            memory: "512Mi" # 512MB 메모리 제한 (기존 512m에서 변경)
+            cpu: "0.5"    # 0.5 vCPU 제한 (기존 0.5에서 변경)
         env:
         - name: SPRING_PROFILES_ACTIVE 
           value: "dev" # ★ 6. 프로파일 변경: dev 프로파일 사용

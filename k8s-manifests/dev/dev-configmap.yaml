@@ -2,8 +2,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: onthetop-backend-config # ConfigMap의 이름
-  namespace: onthetop-backend # ConfigMap이 위치할 네임스페이스
+  name: onthetop-backend-config-dev  # ConfigMap의 이름
+  namespace: onthetop-backend-dev # ConfigMap이 위치할 네임스페이스
 data:
   # JUMP_HOST 제거됨
   BE_VERSION: "v2.0.9" # Docker 이미지의 태그 (기존 backend-deployment.yaml의 태그와 동일하게 설정)

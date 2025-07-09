@@ -30,6 +30,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: my-signoz-signoz # ★ 3. Helm으로 설치된 SigNoz 서비스 이름
+                name: my-signoz # ★ 3. Helm으로 설치된 SigNoz 서비스 이름
                 port:
                   number: 8080 # ★ 4. SigNoz 서비스가 노출하는 포트

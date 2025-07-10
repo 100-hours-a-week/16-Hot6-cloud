@@ -5,8 +5,8 @@ metadata:
   labels:
     app: onthetop-backend
 spec:
-  replicas: 3
-    # ★★★ 1. 배포 전략 ★★★
+  replicas: 1
+  # ★★★ 1. 배포 전략 ★★★
   # 롤링 업데이트 시, 최대 1개의 파드만 추가로 생성하고(maxSurge)
   # 동시에 최대 1개의 파드만 사용 불가능한 상태가 되도록 설정하여 안정성을 높입.
   strategy:
@@ -23,85 +23,76 @@ spec:
         app: onthetop-backend
     spec:
       containers:
-      - name: onthetop-backend-container
-        image: luckyprice1103/onthetop-backend:v2.0.12
-        imagePullPolicy: IfNotPresent
-        ports:
-        - containerPort: 8080
-          name: http-app
-        resources:
-          # ★★★ 2. 최소 리소스 요청량 추가 ★★★
-          # 이 파드가 안정적으로 실행되기 위해 최소 이만큼의 자원을 보장해달라고 요청합니다.
-          requests:
-            memory: "256Mi"
-            cpu: "0.25"
-          limits: # 컨테이너가 사용할 수 있는 최대 자원 제한
-            memory: "512Mi"
-            cpu: "0.5"
-
-        readinessProbe: # 애플리케이션이 트래픽을 받을 준비가 되었는지 확인
-          httpGet:
-            path: /api/v1/health # 실제 사용하는 헬스 체크 경로로 변경하세요.
-            port: 8080
-          initialDelaySeconds: 30 # 컨테이너 시작 후 30초 뒤부터 검사 시작
-          periodSeconds: 10     # 10초마다 검사
-          timeoutSeconds: 5     # 5초 안에 응답이 없으면 실패
-          failureThreshold: 3   # 3번 연속 실패 시 Unhealthy 상태로 변경
-        livenessProbe: # 애플리케이션이 살아있는지(응답하는지) 확인
-          httpGet:
-            path: /api/v1/health # 실제 사용하는 헬스 체크 경로로 변경하세요.
-            port: 8080
-          initialDelaySeconds: 60 # 컨테이너 시작 후 60초 뒤부터 검사 시작
-          periodSeconds: 20     # 20초마다 검사
-          timeoutSeconds: 5     # 5초 안에 응답이 없으면 실패
-          failureThreshold: 3   # 3번 연속 실패 시 컨테이너 재시작
-
-        env:
-        # 1. OTLP 엔드포인트 주소 변경
-        - name: OTEL_EXPORTER_OTLP_ENDPOINT
-          value: "http://my-signoz-otel-collector.signoz.svc.cluster.local:4317"
-
-        # 2. OTLP 프로토콜 설정 (gRPC)
-        - name: OTEL_EXPORTER_OTLP_PROTOCOL
-          value: "grpc"
-
-        # 3. 서비스 이름과 환경을 명확히 구분 (가장 중요!)
-        - name: OTEL_RESOURCE_ATTRIBUTES
-          value: "service.name=onthetop-backend,deployment.environment=prod"
-
-        # 4. 메트릭스는 여전히 사용 안 함
-        - name: OTEL_METRICS_EXPORTER
-          value: "none"
-        - name: SPRING_PROFILES_ACTIVE # Spring 프로파일 설정
-          value: "prod"
-        - name: PORT # 애플리케이션 포트 (ConfigMap에서 가져옴)
-          valueFrom:
-            configMapKeyRef:
-              name: onthetop-backend-config
-              key: PORT
-        - name: BE_VERSION # Docker 이미지 태그에 사용될 변수 (ConfigMap에서 가져옴)
-          valueFrom:
-            configMapKeyRef:
-              name: onthetop-backend-config
-              key: BE_VERSION
-
-
-        volumeMounts:
-        - name: secrets-properties-volume # 아래 volumes 섹션에서 정의한 볼륨 이름
-          mountPath: "/app/secrets.properties" # 컨테이너 내부에서 파일이 마운트될 경로
-          subPath: "secrets.properties" # Secret 내의 'secrets.properties' 키를 파일 이름으로 사용
-          readOnly: true # 읽기 전용으로 마운트
-        - name: logs-volume # 로그 볼륨 (임시 저장소)
-          mountPath: "/logs" # 컨테이너 내부 로그 경로
-
-        # 애플리케이션 시작 인자 (docker run 명령의 마지막 부분과 유사)
-        args:
-        - "--logging.file.name=/logs/backend.log"
-        - "--spring.config.additional-location=file:/app/secrets.properties"
-
+        - name: onthetop-backend-container
+          image: luckyprice1103/onthetop-backend:v2.0.12
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+              name: http-app
+          resources:
+            # ★★★ 2. 최소 리소스 요청량 추가 ★★★
+            # 이 파드가 안정적으로 실행되기 위해 최소 이만큼의 자원을 보장해달라고 요청합니다.
+            requests:
+              memory: "256Mi"
+              cpu: "0.25"
+            limits: # 컨테이너가 사용할 수 있는 최대 자원 제한
+              memory: "256Mi"
+              cpu: "0.25"
+          readinessProbe: # 애플리케이션이 트래픽을 받을 준비가 되었는지 확인
+            httpGet:
+              path: /api/v1/health # 실제 사용하는 헬스 체크 경로로 변경하세요.
+              port: 8080
+            initialDelaySeconds: 30 # 컨테이너 시작 후 30초 뒤부터 검사 시작
+            periodSeconds: 10 # 10초마다 검사
+            timeoutSeconds: 5 # 5초 안에 응답이 없으면 실패
+            failureThreshold: 3 # 3번 연속 실패 시 Unhealthy 상태로 변경
+          livenessProbe: # 애플리케이션이 살아있는지(응답하는지) 확인
+            httpGet:
+              path: /api/v1/health # 실제 사용하는 헬스 체크 경로로 변경하세요.
+              port: 8080
+            initialDelaySeconds: 60 # 컨테이너 시작 후 60초 뒤부터 검사 시작
+            periodSeconds: 20 # 20초마다 검사
+            timeoutSeconds: 5 # 5초 안에 응답이 없으면 실패
+            failureThreshold: 3 # 3번 연속 실패 시 컨테이너 재시작
+          env:
+            # 1. OTLP 엔드포인트 주소 변경
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://my-signoz-otel-collector.signoz.svc.cluster.local:4317"
+            # 2. OTLP 프로토콜 설정 (gRPC)
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+            # 3. 서비스 이름과 환경을 명확히 구분 (가장 중요!)
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.name=onthetop-backend,deployment.environment=prod"
+            # 4. 메트릭스는 여전히 사용 안 함
+            - name: OTEL_METRICS_EXPORTER
+              value: "none"
+            - name: SPRING_PROFILES_ACTIVE # Spring 프로파일 설정
+              value: "prod"
+            - name: PORT # 애플리케이션 포트 (ConfigMap에서 가져옴)
+              valueFrom:
+                configMapKeyRef:
+                  name: onthetop-backend-config
+                  key: PORT
+            - name: BE_VERSION # Docker 이미지 태그에 사용될 변수 (ConfigMap에서 가져옴)
+              valueFrom:
+                configMapKeyRef:
+                  name: onthetop-backend-config
+                  key: BE_VERSION
+          volumeMounts:
+            - name: secrets-properties-volume # 아래 volumes 섹션에서 정의한 볼륨 이름
+              mountPath: "/app/secrets.properties" # 컨테이너 내부에서 파일이 마운트될 경로
+              subPath: "secrets.properties" # Secret 내의 'secrets.properties' 키를 파일 이름으로 사용
+              readOnly: true # 읽기 전용으로 마운트
+            - name: logs-volume # 로그 볼륨 (임시 저장소)
+              mountPath: "/logs" # 컨테이너 내부 로그 경로
+          # 애플리케이션 시작 인자 (docker run 명령의 마지막 부분과 유사)
+          args:
+            - "--logging.file.name=/logs/backend.log"
+            - "--spring.config.additional-location=file:/app/secrets.properties"
       volumes:
-      - name: secrets-properties-volume # Secret을 볼륨으로 정의
-        secret:
-          secretName: onthetop-backend-secrets # ExternalSecret에 의해 생성될 Kubernetes Secret의 이름
-      - name: logs-volume # 임시 로그 볼륨 정의 (Pod 종료 시 내용 사라짐)
-        emptyDir: {}
+        - name: secrets-properties-volume # Secret을 볼륨으로 정의
+          secret:
+            secretName: onthetop-backend-secrets # ExternalSecret에 의해 생성될 Kubernetes Secret의 이름
+        - name: logs-volume # 임시 로그 볼륨 정의 (Pod 종료 시 내용 사라짐)
+          emptyDir: {}

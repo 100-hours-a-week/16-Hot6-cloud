@@ -6,6 +6,14 @@ metadata:
     app: onthetop-backend
 spec:
   replicas: 3
+    # ★★★ 1. 배포 전략 ★★★
+  # 롤링 업데이트 시, 최대 1개의 파드만 추가로 생성하고(maxSurge)
+  # 동시에 최대 1개의 파드만 사용 불가능한 상태가 되도록 설정하여 안정성을 높입.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: onthetop-backend
@@ -22,9 +30,32 @@ spec:
         - containerPort: 8080
           name: http-app
         resources:
+          # ★★★ 2. 최소 리소스 요청량 추가 ★★★
+          # 이 파드가 안정적으로 실행되기 위해 최소 이만큼의 자원을 보장해달라고 요청합니다.
+          requests:
+            memory: "256Mi"
+            cpu: "0.25"
           limits: # 컨테이너가 사용할 수 있는 최대 자원 제한
-            memory: "512Mi" # 512MB 메모리 제한 (기존 512m에서 변경)
-            cpu: "0.5"    # 0.5 vCPU 제한 (기존 0.5에서 변경)
+            memory: "512Mi"
+            cpu: "0.5"
+
+        readinessProbe: # 애플리케이션이 트래픽을 받을 준비가 되었는지 확인
+          httpGet:
+            path: /api/v1/health # 실제 사용하는 헬스 체크 경로로 변경하세요.
+            port: 8080
+          initialDelaySeconds: 30 # 컨테이너 시작 후 30초 뒤부터 검사 시작
+          periodSeconds: 10     # 10초마다 검사
+          timeoutSeconds: 5     # 5초 안에 응답이 없으면 실패
+          failureThreshold: 3   # 3번 연속 실패 시 Unhealthy 상태로 변경
+        livenessProbe: # 애플리케이션이 살아있는지(응답하는지) 확인
+          httpGet:
+            path: /api/v1/health # 실제 사용하는 헬스 체크 경로로 변경하세요.
+            port: 8080
+          initialDelaySeconds: 60 # 컨테이너 시작 후 60초 뒤부터 검사 시작
+          periodSeconds: 20     # 20초마다 검사
+          timeoutSeconds: 5     # 5초 안에 응답이 없으면 실패
+          failureThreshold: 3   # 3번 연속 실패 시 컨테이너 재시작
+
         env:
         # 1. OTLP 엔드포인트 주소 변경
         - name: OTEL_EXPORTER_OTLP_ENDPOINT

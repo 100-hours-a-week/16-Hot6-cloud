@@ -7,7 +7,7 @@ metadata:
   labels:
     app: onthetop-backend-dev # ★ 3. 라벨 변경: dev용으로 지정
 spec:
-  replicas: 1 # ★ 4. 복제본 수 변경: 개발 환경이므로 1개로 줄임
+  replicas: 0 # ★ 4. 복제본 수 변경: 개발 환경이므로 1개로 줄임
   selector:
     matchLabels:
       app: onthetop-backend-dev # ★ 3. 라벨 변경: dev용으로 지정

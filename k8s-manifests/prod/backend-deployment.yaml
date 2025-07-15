@@ -5,7 +5,7 @@ metadata:
   labels:
     app: onthetop-backend
 spec:
-  replicas: 1
+  replicas: 3
   # ★★★ 1. 배포 전략 ★★★
   # 롤링 업데이트 시, 최대 1개의 파드만 추가로 생성하고(maxSurge)
   # 동시에 최대 1개의 파드만 사용 불가능한 상태가 되도록 설정하여 안정성을 높입.
@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: onthetop-backend-container
-          image: luckyprice1103/onthetop-backend:v2.0.12
+          image: luckyprice1103/onthetop-backend:v2.0.13
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

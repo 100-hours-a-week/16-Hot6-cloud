@@ -18,7 +18,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: dev-eks-backend.onthe-top.com # ★ 3. 개발용 도메인으로 변경
+    - host: dev-backend.onthe-top.com # ★ 3. 개발용 도메인으로 변경
       http:
         paths:
           - path: / 

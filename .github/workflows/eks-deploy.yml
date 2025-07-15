@@ -1,0 +1,73 @@
+name: Deploy Production to EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: '배포할 백엔드 이미지 태그 (예: v2.0.12)'
+        required: true
+      replicas:
+        description: '배포할 파드(Pod) 개수'
+        required: true
+        default: '3'
+      cpu_limit:
+        description: 'CPU 최대 사용량 (예: "0.5")'
+        required: true
+        default: '"0.5"'
+      memory_limit:
+        description: '메모리 최대 사용량 (예: "512Mi")'
+        required: true
+        default: '"512Mi"'
+
+jobs:
+  update-manifest:
+    name: Update Production K8s Manifest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout k8s-manifests repository
+        uses: actions/checkout@v3
+        with:
+          # ★★★ 매니페스트 파일이 있는 저장소 ★★★
+          repository: 100-hours-a-week/16-Hot6-cloud
+          # ★★★ 운영 환경 매니페스트가 있는 브랜치 ★★★
+          ref: feat/k8s-manifests 
+          token: ${{ secrets.MANIFEST_REPO_PAT }} # 해당 저장소에 쓰기 권한이 있는 PAT
+          path: k8s-manifests
+
+      - name: Install yq
+        run: sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 && sudo chmod +x /usr/local/bin/yq
+
+      - name: Update deployment.yaml with inputs
+        run: |
+          # 슬롯에서 입력받은 값들을 변수에 저장
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          REPLICAS=${{ github.event.inputs.replicas }}
+          CPU_LIMIT=${{ github.event.inputs.cpu_limit }}
+          MEMORY_LIMIT=${{ github.event.inputs.memory_limit }}
+
+
+          # ★★★ 운영 환경 deployment.yaml 파일 경로 ★★★
+          MANIFEST_PATH="k8s-manifests/k8s-manifests/prod/backend-deployment.yaml"
+          
+          echo "Updating manifest at $MANIFEST_PATH with:"
+          echo "  Image Tag: $IMAGE_TAG"
+          echo "  Replicas: $REPLICAS"
+          echo "  CPU Limit: $CPU_LIMIT"
+          echo "  Memory Limit: $MEMORY_LIMIT"
+
+          # yq를 사용하여 여러 필드를 한 번에 수정
+          yq e -i \
+            ".spec.template.spec.containers[0].image = \"luckyprice1103/onthetop-backend:$IMAGE_TAG\" | \
+            .spec.replicas = $REPLICAS | \
+            .spec.template.spec.containers[0].resources.limits.cpu = \"$CPU_LIMIT\" | \
+            .spec.template.spec.containers[0].resources.limits.memory = \"$MEMORY_LIMIT\"" \
+            $MANIFEST_PATH
+
+      - name: Commit and push changes
+        run: |
+          cd k8s-manifests
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git commit -am "Deploy prod image ${{ github.event.inputs.image_tag }} with ${{ github.event.inputs.replicas }} replicas"
+          git push

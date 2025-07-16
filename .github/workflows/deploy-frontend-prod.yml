@@ -1,0 +1,105 @@
+name: Deploy Frontend Prod
+on:
+  workflow_dispatch:
+    inputs:
+      fe_version:
+        description: '배포할 FE 버전 (예: 1.2.3)'
+        required: true
+      fe_slot:
+        description: 'FE 슬롯 선택 (예: blue, green)'
+        required: true
+        default: 'green'
+        
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      fe_slot: ${{ steps.vars.outputs.fe_slot }}
+
+    env:
+      AWS_DEFAULT_REGION: ap-northeast-2
+      REGION: asia-northeast3
+      GH_FE_REPO: 100-hours-a-week/16-Hot6-fe
+
+    steps:
+      - name: Checkout Infra Repo
+        uses: actions/checkout@v3
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up gcloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Set variables
+        id: vars
+        run: |
+          FE_VERSION="${{ github.event.inputs.fe_version }}"
+          FE_SLOT="${{ github.event.inputs.fe_slot }}"
+          REGION="${{ env.REGION }}"
+      
+      
+          echo "fe_version=$FE_VERSION" >> $GITHUB_OUTPUT
+          echo "fe_slot=$FE_SLOT" >> $GITHUB_OUTPUT
+          echo "region=$REGION" >> $GITHUB_OUTPUT
+
+      # ------------------ FE 업로드 ------------------
+
+      - name: Download FE artifact from GitHub Release
+        run: |
+          curl -L -o fe.zip https://github.com/$GH_FE_REPO/releases/download/v${{ steps.vars.outputs.fe_version }}/frontend-prod-build.zip
+          unzip -o fe.zip -d fe-dist
+
+      - name: Upload FE to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.S3_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.S3_SECRET_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-2
+        run: |
+          aws s3 sync fe-dist/ s3://onthe-top/frontend/prod/${{ steps.vars.outputs.fe_slot }} --delete
+
+
+      # ------------------ CloudFront Origin 변경 및 무효화 ------------------
+
+  cdn-update:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.CLOUDFRONT_ACCESS_KEY }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.CLOUDFRONT_SECRET_KEY }}
+      AWS_DEFAULT_REGION: ap-northeast-2
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+    steps:
+      - name: Update CloudFront Origin
+        run: |
+          SLOT="${{ needs.deploy.outputs.fe_slot }}"
+          DIST_ID="$CLOUDFRONT_DISTRIBUTION_ID"
+
+          # 원본 전체 구성 받아오기
+          aws cloudfront get-distribution-config --id $DIST_ID > raw.json
+
+          # ETag 추출
+          ETAG=$(jq -r '.ETag' raw.json)
+
+          # DistributionConfig만 추출
+          jq '.DistributionConfig' raw.json > config-only.json
+
+          # OriginPath 수정
+          jq --arg SLOT "$SLOT" \
+            '.Origins.Items[0].OriginPath = "/frontend/prod/\($SLOT)"' \
+            config-only.json > updated-config.json
+
+          # 업데이트 적용
+          aws cloudfront update-distribution \
+            --id $DIST_ID \
+            --if-match $ETAG \
+            --distribution-config file://updated-config.json
+
+      - name: Invalidate CloudFront cache
+        run: |
+          SLOT="${{ needs.deploy.outputs.fe_slot }}"
+          aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/" "/index.html" "/assets/*.js" "/assets/*.css"

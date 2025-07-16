@@ -1,0 +1,22 @@
+server:
+  persistentVolume:
+    enabled: true
+    size: 10Gi
+
+  alertingEndpoints:
+    - name: alertmanager
+      namespace: monitoring
+      port: 9093
+      targetPort: 9093
+
+  remoteWrite:
+    - url: "http://prometheus-server.monitoring.svc.cluster.local/api/v1/write"
+
+prometheus-node-exporter:
+  enabled: false
+
+kube-state-metrics:
+  enabled: false
+
+pushgateway:
+  enabled: false

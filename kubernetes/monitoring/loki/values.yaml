@@ -1,0 +1,13 @@
+loki:
+  persistence:
+    enabled: true
+    size: 10Gi
+
+promtail:
+  enabled: false
+
+fluent-bit:
+  enabled: false
+
+grafana:
+  enabled: false

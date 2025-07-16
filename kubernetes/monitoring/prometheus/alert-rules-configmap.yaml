@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alert-rules
+  namespace: monitoring
+  labels:
+    role: alert-rules
+data:
+  alert-rules.yml: |-
+    groups:
+      - name: system_alerts
+        interval: 30s
+        rules:
+          - alert: HighCPUUsage
+            expr: 100 - (avg by (pod) (rate(container_cpu_usage_seconds_total{container!="", image!=""}[5m])) * 100) > 80
+            for: 5m
+            labels:
+              severity: warning
+            annotations:
+              summary: "CPU 사용량 높음"
+              description: "{{ $labels.pod }} 의 CPU 사용률이 80% 초과"

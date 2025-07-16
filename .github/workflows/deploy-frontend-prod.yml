@@ -36,19 +36,14 @@ jobs:
       - name: Set variables
         id: vars
         run: |
-          RAW_BE_VERSION="${{ github.event.inputs.be_version }}"
-          BE_VERSION="v$RAW_BE_VERSION"
           FE_VERSION="${{ github.event.inputs.fe_version }}"
           FE_SLOT="${{ github.event.inputs.fe_slot }}"
           REGION="${{ env.REGION }}"
       
-          MIG_NAME="onthetop-mig-prod"
       
-          echo "be_version=$BE_VERSION" >> $GITHUB_OUTPUT
           echo "fe_version=$FE_VERSION" >> $GITHUB_OUTPUT
           echo "fe_slot=$FE_SLOT" >> $GITHUB_OUTPUT
           echo "region=$REGION" >> $GITHUB_OUTPUT
-          echo "mig_name=$MIG_NAME" >> $GITHUB_OUTPUT
 
       # ------------------ FE 업로드 ------------------
 

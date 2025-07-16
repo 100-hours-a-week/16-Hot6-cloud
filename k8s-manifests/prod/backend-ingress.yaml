@@ -24,7 +24,7 @@ metadata:
 spec:
   ingressClassName: alb # Ingress Controller 클래스 지정
   rules:
-    - host: eks-backend.onthe-top.com # 애플리케이션에 접근할 외부 도메인 이름으로 변경 필요
+    - host: backend.onthe-top.com # 애플리케이션에 접근할 외부 도메인 이름으로 변경 필요
       http:
         paths:
           - path: / 

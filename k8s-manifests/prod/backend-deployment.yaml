@@ -5,7 +5,7 @@ metadata:
   labels:
     app: onthetop-backend
 spec:
-  replicas: 3
+  replicas: 1
   # ★★★ 1. 배포 전략 ★★★
   # 롤링 업데이트 시, 최대 1개의 파드만 추가로 생성하고(maxSurge)
   # 동시에 최대 1개의 파드만 사용 불가능한 상태가 되도록 설정하여 안정성을 높입.
@@ -36,7 +36,7 @@ spec:
               memory: "256Mi"
               cpu: "0.25"
             limits: # 컨테이너가 사용할 수 있는 최대 자원 제한
-              memory: "512Mi"
+              memory: "1024Mi"
               cpu: "0.5"
           readinessProbe: # 애플리케이션이 트래픽을 받을 준비가 되었는지 확인
             httpGet:

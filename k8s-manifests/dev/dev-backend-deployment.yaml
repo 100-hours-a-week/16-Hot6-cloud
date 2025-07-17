@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: onthetop-backend-container
-          image: "luckyprice1103/onthetop-backend-dev:06d1665" # 개발용 이미지가 있다면 변경
+          image: "luckyprice1103/onthetop-backend-dev:5b1fe0c" # 개발용 이미지가 있다면 변경
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

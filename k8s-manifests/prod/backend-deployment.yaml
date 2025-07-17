@@ -24,7 +24,7 @@ spec:
     spec:
       containers:
         - name: onthetop-backend-container
-          image: luckyprice1103/onthetop-backend:v2.0.13
+          image: luckyprice1103/onthetop-backend:v2.0.14
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

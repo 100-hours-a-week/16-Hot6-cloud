@@ -1,0 +1,65 @@
+---
+- name: Add NVIDIA Docker GPG key
+  apt_key:
+    url: https://nvidia.github.io/nvidia-docker/gpgkey
+    state: present
+  become: true
+
+- name: Add NVIDIA Docker repo
+  get_url:
+    url: https://nvidia.github.io/nvidia-docker/ubuntu20.04/nvidia-docker.list
+    dest: /etc/apt/sources.list.d/nvidia-docker.list
+  become: true
+
+- name: Update APT cache
+  apt:
+    update_cache: yes
+  become: true
+
+- name: Install nvidia-docker2
+  apt:
+    name: nvidia-docker2
+    state: present
+  become: true
+
+- name: Enable NVIDIA runtime in Docker
+  copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+        "default-runtime": "nvidia",
+        "runtimes": {
+          "nvidia": {
+            "path": "nvidia-container-runtime",
+            "runtimeArgs": []
+          }
+        }
+      }
+    mode: '0644'
+  become: true
+
+- name: Restart Docker
+  systemd:
+    name: docker
+    state: restarted
+    enabled: yes
+  become: true
+
+- name: Pull dcgm-exporter image from DockerHub
+  docker_image:
+    name: nvidia/dcgm-exporter
+    tag: latest
+    source: pull
+  become: true
+
+- name: Run dcgm-exporter container
+  docker_container:
+    name: dcgm-exporter
+    image: nvidia/dcgm-exporter:latest
+    restart_policy: always
+    ports:
+      - "9400:9400"
+    runtime: nvidia
+    state: started
+    detach: true
+  become: true
